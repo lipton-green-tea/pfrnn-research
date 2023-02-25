@@ -189,6 +189,8 @@ class Localizer(nn.Module):
         l2_pred_loss = torch.nn.functional.mse_loss(pred, gt_normalized, reduction='none') * bpdecay_params
         l1_pred_loss = torch.nn.functional.l1_loss(pred, gt_normalized, reduction='none') * bpdecay_params
 
+        # separate loss for position and bearing calculation so we can weight their 
+        # contribution to the total loss separately
         l2_xy_loss = torch.sum(l2_pred_loss[:, :, :2])
         l2_h_loss = torch.sum(l2_pred_loss[:, :, 2])
         l2_loss = l2_xy_loss + args.h_weight * l2_h_loss
@@ -197,10 +199,12 @@ class Localizer(nn.Module):
         l1_h_loss = torch.mean(l1_pred_loss[:, :, 2])
         l1_loss = 10*l1_xy_loss + args.h_weight * l1_h_loss
 
+        # separately weight the L1 and L2 loss
         pred_loss = args.l2_weight * l2_loss + args.l1_weight * l1_loss
 
         total_loss = pred_loss
 
+        # We calculate particle loss using l1 and mse against the actual set of states
         particle_pred = particle_pred.transpose(0, 1).contiguous()
         particle_gt = gt_normalized.repeat(self.num_particles, 1, 1)
         l2_particle_loss = torch.nn.functional.mse_loss(particle_pred, particle_gt, reduction='none') * bpdecay_params
