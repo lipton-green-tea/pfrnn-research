@@ -5,6 +5,15 @@ import numpy as np
 from arguments import parse_args
 import collections
 
+class ModelArgs():
+    def __init__(self, bpdecay=0.1, l1_weight=0.0, l2_weight=1.0, elbo_weight=0):
+        self.bpdecay = bpdecay
+        self.l1_weight = l1_weight
+        self.l2_weight = l2_weight
+        self.elbo_weight = elbo_weight
+
+
+
 class SVMParamterEstimator(nn.Module):
     def __init__(self):
         super(SVMParamterEstimator, self).__init__()
@@ -233,6 +242,7 @@ if __name__=="__main__":
     model.zero_grad()
     print(obs.dtype)
     print(actual.dtype)
+    print(obs.shape)
     for x in range(0,10):
         model.zero_grad()  # set all gradients to zero before each iteration
         loss, log_loss, particle_pred = model.step(obs,actual,args)
