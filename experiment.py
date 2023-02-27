@@ -27,7 +27,8 @@ if __name__=="__main__":
         "window_size": 10,  # implement the components needed for this in the model
         "train_test_split": 0.8,
         "epochs": 5,
-        "batch_size": 200
+        "batch_size": 200,
+        "learning_rate": 0.001
     }
 
     sv_parameters = SVL1Paramters(
@@ -41,6 +42,11 @@ if __name__=="__main__":
 
     # initialize model args to default values 
     model_args = ModelArgs()
+    model_config = {
+        "num_particles": 128,
+        "input_size": config["window_size"],
+        "hidden_dimension": 30 
+    }
 
     xs = []
     ys = []
@@ -106,9 +112,9 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
-    model = SVMParamterEstimator()
+    model = SVMParamterEstimator(model_config)
     optimizer = torch.optim.RMSprop(
-            model.parameters(), lr=0.005)
+            model.parameters(), lr=config["learning_rate"])
 
     # step 3: train the model
     # 

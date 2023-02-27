@@ -15,13 +15,13 @@ class ModelArgs():
 
 
 class SVMParamterEstimator(nn.Module):
-    def __init__(self):
+    def __init__(self, model_args=dict()):
         super(SVMParamterEstimator, self).__init__()
 
-        self.num_particles = 64
+        self.num_particles = model_args.get("num_particles", 64)
         self.output_dim = 1
-        total_emb = 10  # should match the size of the input (i.e. observation dimensions)
-        self.hidden_dim = 30 # 10
+        total_emb = model_args.get("input_size", 10)  # should match the size of the input (i.e. observation dimensions)
+        self.hidden_dim = model_args.get("hidden_dimension", 30) # 10
         resamp_alpha = 0.1
         self.initialize = 'rand'
         self.model = 'PFLSTM'
