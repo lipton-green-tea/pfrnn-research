@@ -29,14 +29,15 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 100,
-        "sequence_length": 400,
+        "samples": 1000,
+        "sequence_length": 200,
         "window_size": 20,
         "train_test_split": 0.8,
-        "epochs": 2,
+        "epochs": 20,
         "batch_size": 50,
-        "learning_rate": 0.005,
+        "learning_rate": 0.001,
         "load_model_from_previous": False,
+        "load_data_from_previous": False
     }
 
     sv_parameters = SVL1Paramters(
@@ -60,7 +61,8 @@ if __name__=="__main__":
     ys = []
 
     # here we either load or generate our dataset
-    if os.path.isfile("xs_train.pt"):  # if the xs_train tensor file exists assume the others do too
+    if config["load_data_from_previous"] and \
+       os.path.isfile("xs_train.pt"):  # if the xs_train tensor file exists assume the others do too
         # we load our tensors from their files
         with open("xs_train.pt", 'rb') as f:
             xs_train = torch.load(f)
