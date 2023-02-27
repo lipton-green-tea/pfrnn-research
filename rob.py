@@ -21,7 +21,7 @@ class SVMParamterEstimator(nn.Module):
         self.num_particles = model_args.get("num_particles", 64)
         self.output_dim = 1
         total_emb = model_args.get("input_size", 10)  # should match the size of the input (i.e. observation dimensions)
-        self.hidden_dim = model_args.get("hidden_dimension", 30) # 10
+        self.hidden_dim = model_args.get("hidden_dimension", 30)
         resamp_alpha = 0.1
         self.initialize = 'rand'
         self.model = 'PFLSTM'
@@ -67,7 +67,7 @@ class SVMParamterEstimator(nn.Module):
         batch_size = observations.size(0)
         embedding = observations
 
-        # repeat the input if using the PF-RNN
+        # create a copy of the input for each particle
         embedding = embedding.repeat(self.num_particles, 1, 1)
         seq_len = embedding.size(1)
         hidden = self.init_hidden(batch_size)

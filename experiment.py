@@ -33,11 +33,11 @@ if __name__=="__main__":
         "sequence_length": 200,
         "window_size": 20,
         "train_test_split": 0.8,
-        "epochs": 20,
+        "epochs": 0, # set to 0 if you don't want to train the model
         "batch_size": 50,
-        "learning_rate": 0.001,
-        "load_model_from_previous": False,
-        "load_data_from_previous": False
+        "learning_rate": 0.005,
+        "load_model_from_previous": True,
+        "load_data_from_previous": True
     }
 
     sv_parameters = SVL1Paramters(
@@ -172,6 +172,7 @@ if __name__=="__main__":
 
     for e in range(config["epochs"]):
         print(f"running epoch {e} out of {config['epochs']}")
+        start_time = time.time()
 
         model.train()
 
@@ -209,6 +210,8 @@ if __name__=="__main__":
             loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
             print(loss)
             loss_per_epoch.append(loss.to('cpu').detach().numpy())
+        
+        print(f"epoch {e} took {time.time() - start_time} seconds")
 
     
     # step 4: save the model
@@ -229,8 +232,10 @@ if __name__=="__main__":
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
-    print(xs_test[-1:].shape)
-    single_series = xs_test[-1:]
+    series_num = 2
+
+    print(xs_test[-series_num:(-series_num)+1].shape)
+    single_series = xs_test[-series_num:(-series_num)+1]
     if torch.cuda.is_available():
                 single_series = single_series.to('cuda')
     ys_pred, particle_pred = model.forward(single_series)
@@ -241,8 +246,12 @@ if __name__=="__main__":
 
     # flatten into a 1D array
     ys_pred = ys_pred.reshape((len(ys_pred), ))
-    ys_true = ys_true[-1].reshape((len(ys_test[-1], )))
+    ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
+    print(xs_test.shape)
+    print(xs_test[-series_num, :,-1].shape)
+    xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
 
     plt.plot(ys_pred, color="orange")
     plt.plot(ys_true, color="blue")
+    plt.plot(xs_true, color="pink")
     plt.show()
