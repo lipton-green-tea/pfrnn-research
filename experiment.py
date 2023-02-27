@@ -4,6 +4,7 @@ from rob import SVMParamterEstimator, ModelArgs
 import math
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 if __name__=="__main__":
@@ -21,13 +22,12 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 100,
+        "samples": 1000,
         "sequence_length": 200,
-        "batch_size": 20,
         "window_size": 10,  # implement the components needed for this in the model
         "train_test_split": 0.8,
-        "epochs": 10,
-        "batch_size": 10
+        "epochs": 5,
+        "batch_size": 200
     }
 
     sv_parameters = SVL1Paramters(
@@ -45,6 +45,7 @@ if __name__=="__main__":
     xs = []
     ys = []
 
+    # generate volatility data using the SVL1 model
     for s in range(config["samples"]):
         volatility, innovations = SVL1.generate_data(config["sequence_length"], sv_parameters)
 
@@ -119,6 +120,8 @@ if __name__=="__main__":
 
     batch_size = config["batch_size"]
 
+    loss_per_epoch = []
+
     for e in range(config["epochs"]):
         model.train()
 
@@ -133,12 +136,48 @@ if __name__=="__main__":
             model.zero_grad()
 
             # perform 1 step of gradient descent 
-            print(xs_batch.shape)
-            print(ys_batch.shape)
             loss, log_loss, particle_pred = model.step(xs_batch,ys_batch,model_args)
             print(loss)
             loss.backward()
             optimizer.step()
+
+        # we now evaluate the model using our eval 
+        model.zero_grad()
+        loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
+        loss_per_epoch.append(loss.detach().numpy())
+
+    
+    # step 4: draw the graphs
+    # 
+    # we want to display our results now
+    # we draw a number of graphs to show these including
+    # 1. a graph of the loss over epochs
+    # 2. a graph showing the model fit to data
+
+    print(loss_per_epoch)
+
+    # we will now fit the model to some data and plot the result
+    print(xs_test[-1:].shape)
+    ys_pred, particle_pred = model.forward(xs_test[-1:])
+
+    # convert to numpy arrays
+    ys_pred = ys_pred.detach().numpy()
+    ys_true = ys_test.detach().numpy()
+
+    print(ys_pred.shape)
+    print(ys_true.shape)
+
+    # flatten into a 1D array
+    ys_pred = ys_pred.reshape((len(ys_pred), ))
+    ys_true = ys_test[-1].reshape((len(ys_test[-1], )))
+
+
+    plt.plot(ys_pred, color="orange")
+    plt.plot(ys_true, color="blue")
+    plt.show()
+    
+
+
 
 
 
