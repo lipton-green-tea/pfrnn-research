@@ -1,13 +1,20 @@
 from stochastic_volatility import SVL1, SVL1Paramters
 from rob import SVMParamterEstimator, ModelArgs
 
+import os
 import math
 import torch
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 if __name__=="__main__":
+
+    # start by clearing the cache to prevent GPU from running out
+    # of memory
+    torch.cuda.empty_cache()
+
     # step 1: generate data
     # 
     # we will create several series for our dataset,
@@ -22,13 +29,14 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 1000,
-        "sequence_length": 200,
-        "window_size": 10,  # implement the components needed for this in the model
+        "samples": 100,
+        "sequence_length": 400,
+        "window_size": 20,
         "train_test_split": 0.8,
-        "epochs": 5,
-        "batch_size": 200,
-        "learning_rate": 0.001
+        "epochs": 2,
+        "batch_size": 50,
+        "learning_rate": 0.005,
+        "load_model_from_previous": False,
     }
 
     sv_parameters = SVL1Paramters(
@@ -43,68 +51,93 @@ if __name__=="__main__":
     # initialize model args to default values 
     model_args = ModelArgs()
     model_config = {
-        "num_particles": 128,
+        "num_particles": 64,
         "input_size": config["window_size"],
-        "hidden_dimension": 30 
+        "hidden_dimension": 15 
     }
 
     xs = []
     ys = []
 
-    # generate volatility data using the SVL1 model
-    for s in range(config["samples"]):
-        volatility, innovations = SVL1.generate_data(config["sequence_length"], sv_parameters)
+    # here we either load or generate our dataset
+    if os.path.isfile("xs_train.pt"):  # if the xs_train tensor file exists assume the others do too
+        # we load our tensors from their files
+        with open("xs_train.pt", 'rb') as f:
+            xs_train = torch.load(f)
+        with open("ys_train.pt", 'rb') as f:
+            ys_train = torch.load(f)
+        with open("xs_test.pt", 'rb') as f:
+            xs_test = torch.load(f)
+        with open("ys_test.pt", 'rb') as f:
+            ys_test = torch.load(f)
+    else:  # generate volatility data using the SVL1 model
+        start_time = time.time()
+        for s in range(config["samples"]):
+            volatility, innovations = SVL1.generate_data(config["sequence_length"], sv_parameters)
 
-        # normalize values to between 0 and 1
-        volatility = normalize(volatility)
-        innovations = normalize(innovations)
+            # normalize values to between 0 and 1
+            volatility = normalize(volatility)
+            innovations = normalize(innovations)
 
-        # below we create several windows of observations
-        window_size = 10
-        windows = ( # add arrays together to create sub_windows
-            np.expand_dims(np.arange(window_size), 0) +  # time offsets
-            np.expand_dims(np.arange(len(innovations) - window_size), 0).T  # start times
-        )
-        innovation_windows = innovations[windows]
+            # below we create several windows of observations
+            window_size = config["window_size"]
+            windows = ( # add arrays together to create sub_windows
+                np.expand_dims(np.arange(window_size), 0) +  # time offsets
+                np.expand_dims(np.arange(len(innovations) - window_size), 0).T  # start times
+            )
+            innovation_windows = innovations[windows]
 
-        # get rid of the volatilies for which we do not have enough previous values for
-        volatility = volatility[window_size:]
+            # get rid of the volatilies for which we do not have enough previous values for
+            volatility = volatility[window_size:]
 
-        # reshape volatility to have one output per window 
-        volatility = volatility.reshape(len(volatility), 1, )
+            # reshape volatility to have one output per window 
+            volatility = volatility.reshape(len(volatility), 1, )
 
-        # finally we add the arrays to our dataset
-        xs.append(innovation_windows)
-        ys.append(volatility)
+            # finally we add the arrays to our dataset
+            xs.append(innovation_windows)
+            ys.append(volatility)
 
-    # data reshaping/formatting
-    # 1. convert xs and ys to numpy arrays
-    # 2. ensure the types are float32
-    # 3. split into test and trai4
-    # 3. convert them to pytorch tensors
-    xs = np.array(xs)
-    ys = np.array(ys)
+        print(f"time taken to generate data: {time.time() - start_time}")
 
-    xs = xs.astype(np.float32)
-    ys = ys.astype(np.float32)
+        # data reshaping/formatting
+        # 1. convert xs and ys to numpy arrays
+        # 2. ensure the types are float32
+        # 3. split into test and trai4
+        # 3. convert them to pytorch tensors
+        xs = np.array(xs)
+        ys = np.array(ys)
 
-    split = round(len(xs) * config["train_test_split"])
-    indices = np.random.permutation(len(xs))
-    train_indices, test_indices = indices[0:split], indices[split:]
-    xs_train, xs_test = xs[train_indices], xs[test_indices]
-    ys_train, ys_test = ys[train_indices], ys[test_indices]
+        xs = xs.astype(np.float32)
+        ys = ys.astype(np.float32)
 
-    xs_train = torch.from_numpy(xs_train)
-    ys_train = torch.from_numpy(ys_train)
-    xs_test = torch.from_numpy(xs_test)
-    ys_test = torch.from_numpy(ys_test)
+        split = round(len(xs) * config["train_test_split"])
+        indices = np.random.permutation(len(xs))
+        train_indices, test_indices = indices[0:split], indices[split:]
+        xs_train, xs_test = xs[train_indices], xs[test_indices]
+        ys_train, ys_test = ys[train_indices], ys[test_indices]
 
-    xs_train.type(torch.FloatTensor)
-    ys_train.type(torch.FloatTensor)
-    xs_test.type(torch.FloatTensor)
-    ys_test.type(torch.FloatTensor)
+        xs_train = torch.from_numpy(xs_train)
+        ys_train = torch.from_numpy(ys_train)
+        xs_test = torch.from_numpy(xs_test)
+        ys_test = torch.from_numpy(ys_test)
 
+        xs_train.type(torch.FloatTensor)
+        ys_train.type(torch.FloatTensor)
+        xs_test.type(torch.FloatTensor)
+        ys_test.type(torch.FloatTensor)
 
+        # save all the tensors so they can be loaded instead
+        # of generated next time
+        with open("xs_train.pt", 'wb') as f:
+            torch.save(xs_train, f)
+        with open("ys_train.pt", 'wb') as f:
+            torch.save(ys_train, f)
+        with open("xs_test.pt", 'wb') as f:
+            torch.save(xs_test, f)
+        with open("ys_test.pt", 'wb') as f:
+            torch.save(ys_test, f)
+
+    print(xs_train.shape)
     # step 2: create the model and optimizer
     # 
     # we create a PF-RNN
@@ -113,8 +146,15 @@ if __name__=="__main__":
     # we also create an optimizer
 
     model = SVMParamterEstimator(model_config)
+    if torch.cuda.is_available():
+        model.to('cuda')
     optimizer = torch.optim.RMSprop(
             model.parameters(), lr=config["learning_rate"])
+
+    # if flag set in config we load our model parameters from a previous
+    # iteration/checkpoint
+    if config["load_model_from_previous"]:
+        model.load_state_dict(torch.load("./models/pfrnn.pt"))
 
     # step 3: train the model
     # 
@@ -129,10 +169,19 @@ if __name__=="__main__":
     loss_per_epoch = []
 
     for e in range(config["epochs"]):
+        print(f"running epoch {e} out of {config['epochs']}")
+
         model.train()
 
         iterations = math.ceil(len(xs_train) / config["batch_size"])
         for i in range(iterations):
+
+            # print free GPU memory (for debugging)
+            # if torch.cuda.is_available():
+            #     r = torch.cuda.memory_reserved(0)
+            #     a = torch.cuda.memory_allocated(0)
+            #     f = r-a  # free inside reserved
+            #     print(f"free memory: {f}")
 
             xs_batch = xs_train[i * batch_size:(i + 1) * batch_size]
             ys_batch = ys_train[i * batch_size:(i + 1) * batch_size]
@@ -142,18 +191,32 @@ if __name__=="__main__":
             model.zero_grad()
 
             # perform 1 step of gradient descent 
+            if torch.cuda.is_available():
+                xs_batch = xs_batch.to('cuda')
+                ys_batch = ys_batch.to('cuda')
             loss, log_loss, particle_pred = model.step(xs_batch,ys_batch,model_args)
-            print(loss)
             loss.backward()
             optimizer.step()
 
         # we now evaluate the model using our eval 
-        model.zero_grad()
-        loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
-        loss_per_epoch.append(loss.detach().numpy())
+        with torch.no_grad():
+            model.zero_grad()
+            if torch.cuda.is_available():
+                xs_test = xs_test.to('cuda')
+                ys_test = ys_test.to('cuda')
+            loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
+            print(loss)
+            loss_per_epoch.append(loss.to('cpu').detach().numpy())
 
     
-    # step 4: draw the graphs
+    # step 4: save the model
+    #
+    # we save the model using pytorch functions
+    
+    torch.save(model.state_dict(), "./models/pfrnn.pt")
+
+    
+    # step 5: draw the graphs
     # 
     # we want to display our results now
     # we draw a number of graphs to show these including
@@ -162,28 +225,22 @@ if __name__=="__main__":
 
     print(loss_per_epoch)
 
-    # we will now fit the model to some data and plot the result
+    # we will now predict volatility for a single innovations series
+    # and then plot the predictions against the actual volatility
     print(xs_test[-1:].shape)
-    ys_pred, particle_pred = model.forward(xs_test[-1:])
+    single_series = xs_test[-1:]
+    if torch.cuda.is_available():
+                single_series = single_series.to('cuda')
+    ys_pred, particle_pred = model.forward(single_series)
 
     # convert to numpy arrays
-    ys_pred = ys_pred.detach().numpy()
-    ys_true = ys_test.detach().numpy()
-
-    print(ys_pred.shape)
-    print(ys_true.shape)
+    ys_pred = ys_pred.cpu().detach().numpy()
+    ys_true = ys_test.cpu().detach().numpy()
 
     # flatten into a 1D array
     ys_pred = ys_pred.reshape((len(ys_pred), ))
-    ys_true = ys_test[-1].reshape((len(ys_test[-1], )))
-
+    ys_true = ys_true[-1].reshape((len(ys_test[-1], )))
 
     plt.plot(ys_pred, color="orange")
     plt.plot(ys_true, color="blue")
     plt.show()
-    
-
-
-
-
-

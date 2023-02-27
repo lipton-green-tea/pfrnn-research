@@ -70,7 +70,6 @@ class SVMParamterEstimator(nn.Module):
         # repeat the input if using the PF-RNN
         embedding = embedding.repeat(self.num_particles, 1, 1)
         seq_len = embedding.size(1)
-        print(seq_len)
         hidden = self.init_hidden(batch_size)
 
         hidden_states = []
