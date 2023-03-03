@@ -252,6 +252,3 @@ if __name__=="__main__":
     # set model to eval mode before evaluating
     model.eval()
     pred, particle_pred = model.forward(obs)
-
-    print(xs[-10:])
-    print(pred[-10:])
