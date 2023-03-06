@@ -6,7 +6,7 @@ from arguments import parse_args
 import collections
 
 class ModelArgs():
-    def __init__(self, bpdecay=0.1, l1_weight=0.0, l2_weight=1.0, elbo_weight=0):
+    def __init__(self, bpdecay=0.1, l1_weight=0.0, l2_weight=1.0, elbo_weight=0.1):
         self.bpdecay = bpdecay
         self.l1_weight = l1_weight
         self.l2_weight = l2_weight
@@ -21,36 +21,36 @@ class SVMParamterEstimator(nn.Module):
         self.num_particles = model_args.get("num_particles", 64)
         self.output_dim = 1
         total_emb = model_args.get("input_size", 10)  # should match the size of the input (i.e. observation dimensions)
-        self.hidden_dim = model_args.get("hidden_dimension", 30)
+        self.hidden_dim = model_args.get("hidden_dimension", 100)
         resamp_alpha = 0.1
         self.initialize = 'rand'
         self.model = 'PFLSTM'
-        self.dropout_rate = 0.2
-
+        self.dropout_rate = 0.0  # TODO: revert this to have some dropout
 
         self.rnn = PFLSTMCell(self.num_particles, total_emb,
-                    self.hidden_dim, 10, 10, resamp_alpha)
+                    self.hidden_dim, 20, 20, resamp_alpha)
 
         self.hnn_dropout = nn.Dropout(self.dropout_rate)
 
-        self.hidden2label = nn.Linear(self.hidden_dim, self.output_dim)
+        linear_hidden_size = 200
+        self.layer1 = nn.Sequential(
+            nn.Linear(self.hidden_dim, linear_hidden_size),
+            nn.Sigmoid()
+        )
+
+        self.layer2 = nn.Sequential(
+            nn.Linear(linear_hidden_size, self.output_dim),
+            nn.Sigmoid()
+        )
 
     def init_hidden(self, batch_size):
         initializer = torch.rand if self.initialize == 'rand' else torch.zeros
 
-        if self.model == 'PFLSTM':
-            h0 = initializer(batch_size * self.num_particles, self.hidden_dim)  # hidden state
-            c0 = initializer(batch_size * self.num_particles, self.hidden_dim)  # cell state
-            p0 = torch.ones(batch_size * self.num_particles, 1) * np.log(1 / self.num_particles)  # weights
-            hidden = (h0, c0, p0)
+        h0 = initializer(batch_size * self.num_particles, self.hidden_dim)  # hidden state
+        c0 = initializer(batch_size * self.num_particles, self.hidden_dim)  # cell state
+        p0 = torch.ones(batch_size * self.num_particles, 1) * np.log(1 / self.num_particles)  # weights
 
-        elif self.model == 'PFGRU':
-            h0 = initializer(batch_size * self.num_particles, self.hidden_dim)
-            p0 = torch.ones(batch_size * self.num_particles, 1) * np.log(1 / self.num_particles)
-            hidden = (h0, p0)
-
-        else:
-            raise ModuleNotFoundError
+        hidden = (h0, c0, p0)
 
         def cudify_hidden(h):
             if isinstance(h, tuple):
@@ -75,6 +75,7 @@ class SVMParamterEstimator(nn.Module):
         hidden_states = []
         probs = []
 
+
         for step in range(seq_len):
             hidden = self.rnn(embedding[:, step, :], hidden)
             hidden_states.append(hidden[0])
@@ -91,18 +92,14 @@ class SVMParamterEstimator(nn.Module):
         out_reshape = hidden_states.view([seq_len, self.num_particles, -1, self.hidden_dim])
         y = out_reshape * torch.exp(prob_reshape)
         y = torch.sum(y, dim=1)
-        y = self.hidden2label(y)
-        pf_labels = self.hidden2label(hidden_states)
+        y = self.layer1(y)
+        pf_labels = self.layer1(hidden_states)
 
-        # what is the point of this, surely y == y_out?
-        y_out_xy = torch.sigmoid(y[:, :, :2])
-        y_out_h = torch.sigmoid(y[:, :, 2:])
-        y_out = torch.cat([y_out_xy, y_out_h], dim=2)
+        y = self.layer2(y)
+        pf_labels = self.layer2(pf_labels)
 
-        # what is the point of this, surely pf_out == pf_labels?
-        pf_out_xy = torch.sigmoid(pf_labels[:, :, :2])
-        pf_out_h = torch.sigmoid(pf_labels[:, :, 2:])
-        pf_out = torch.cat([pf_out_xy, pf_out_h], dim=2)
+        y_out = y
+        pf_out = pf_labels
         
         return y_out, pf_out
 
@@ -182,7 +179,7 @@ class SVMParamterEstimator(nn.Module):
         belief_loss = args.l2_weight * l2_particle_loss + args.l1_weight * l1_particle_loss
         total_loss = total_loss + args.elbo_weight * belief_loss
 
-        loss_last = torch.nn.functional.mse_loss(pred[:, -1, :2], gt_pos[:, -1, :2])
+        loss_last = torch.nn.functional.mse_loss(pred[:, -1, :], gt_pos[:, -1, :])
 
         particle_pred = particle_pred.view(self.num_particles, batch_size, sl, self.output_dim)
 

@@ -1,5 +1,6 @@
 from stochastic_volatility import SVL1, SVL1Paramters
 from rob import SVMParamterEstimator, ModelArgs
+from lstm_model import LSTM1
 
 import os
 import math
@@ -29,15 +30,17 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 1000,
-        "sequence_length": 200,
+        "samples": 2000,
+        "sequence_length": 60,
         "window_size": 20,
         "train_test_split": 0.8,
-        "epochs": 10, # set to 0 if you don't want to train the model
-        "batch_size": 50,
-        "learning_rate": 0.02,
+        "epochs": 0, # set to 0 if you don't want to train the model
+        "batch_size": 200,
+        "learning_rate": 0.002,
         "load_model_from_previous": True,
-        "load_data_from_previous": True
+        "load_data_from_previous": True,
+        "save_models": True,
+        "model_path": "./models/pfrnn_epoch_113.pt",
     }
 
     sv_parameters = SVL1Paramters(
@@ -45,20 +48,20 @@ if __name__=="__main__":
         phi=0.972,
         rho=-0.3179,
         sigma=0.1495,
-        initial_innovation=0.1,
-        initial_volatility=0.1
+        initial_innovation=0.5,
+        initial_volatility=0.5
     )
 
     # initialize model args to default values 
-    model_args = ModelArgs()
+    model_args = ModelArgs(
+        l1_weight=0.5,
+        l2_weight=0.5
+    )
     model_config = {
         "num_particles": 64,
         "input_size": config["window_size"],
-        "hidden_dimension": 15 
+        "hidden_dimension": 50
     }
-
-    xs = []
-    ys = []
 
     # here we either load or generate our dataset
     if config["load_data_from_previous"] and \
@@ -74,6 +77,10 @@ if __name__=="__main__":
             ys_test = torch.load(f)
     else:  # generate volatility data using the SVL1 model
         start_time = time.time()
+
+        xs = []
+        ys = []
+
         for s in range(config["samples"]):
             volatility, innovations = SVL1.generate_data(config["sequence_length"], sv_parameters)
 
@@ -140,6 +147,8 @@ if __name__=="__main__":
             torch.save(ys_test, f)
 
     print(xs_train.shape)
+
+
     # step 2: create the model and optimizer
     # 
     # we create a PF-RNN
@@ -147,16 +156,19 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
-    model = SVMParamterEstimator(model_config)
+    #model = SVMParamterEstimator(model_config)
+    model = LSTM1(1, config["window_size"], 150, 1)
     if torch.cuda.is_available():
         model.to('cuda')
-    optimizer = torch.optim.RMSprop(
+    optimizer = torch.optim.AdamW(
             model.parameters(), lr=config["learning_rate"])
 
     # if flag set in config we load our model parameters from a previous
     # iteration/checkpoint
-    if config["load_model_from_previous"]:
-        model.load_state_dict(torch.load("./models/pfrnn.pt"))
+    if config["load_model_from_previous"] and \
+       os.path.isfile(config["model_path"]):
+        print("loading model from checkpoint")
+        model.load_state_dict(torch.load(config["model_path"]))
 
     # step 3: train the model
     # 
@@ -169,15 +181,17 @@ if __name__=="__main__":
     batch_size = config["batch_size"]
 
     loss_per_epoch = []
+    training_loss = []
 
     for e in range(config["epochs"]):
         print(f"running epoch {e} out of {config['epochs']}")
         start_time = time.time()
 
-        model.train()
-
         iterations = math.ceil(len(xs_train) / config["batch_size"])
         for i in range(iterations):
+
+            # set model to training mode
+            model.train()
 
             # print free GPU memory (for debugging)
             # if torch.cuda.is_available():
@@ -191,25 +205,36 @@ if __name__=="__main__":
 
             # reset all gradients that have been built up on the model
             # between iterations
-            model.zero_grad()
+            optimizer.zero_grad()
 
-            # perform 1 step of gradient descent 
+            # convert tensors to cuda if available
             if torch.cuda.is_available():
                 xs_batch = xs_batch.to('cuda')
                 ys_batch = ys_batch.to('cuda')
+
+            # perform 1 step of gradient descent
             loss, log_loss, particle_pred = model.step(xs_batch,ys_batch,model_args)
             loss.backward()
             optimizer.step()
 
+            # print our loss and save it in a list
+            print(f"training loss: {loss}")
+            training_loss.append(loss.to('cpu').detach().numpy())
+
         # we now evaluate the model using our eval 
         with torch.no_grad():
+            model.eval()
             model.zero_grad()
             if torch.cuda.is_available():
                 xs_test = xs_test.to('cuda')
                 ys_test = ys_test.to('cuda')
             loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
-            print(loss)
+            print(f"eval loss: {loss}")
             loss_per_epoch.append(loss.to('cpu').detach().numpy())
+
+        # save the model in between epochs
+        if config["save_models"]:
+            torch.save(model.state_dict(), f"./models/pfrnn_epoch_{e}.pt")
         
         print(f"epoch {e} took {time.time() - start_time} seconds")
 
@@ -217,7 +242,6 @@ if __name__=="__main__":
     # step 4: save the model
     #
     # we save the model using pytorch functions
-    
     torch.save(model.state_dict(), "./models/pfrnn.pt")
 
     
@@ -232,7 +256,7 @@ if __name__=="__main__":
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
-    series_num = 2
+    series_num = 0
 
     print(xs_test[-series_num:(-series_num)+1].shape)
     single_series = xs_test[-series_num:(-series_num)+1]
@@ -245,13 +269,23 @@ if __name__=="__main__":
     ys_true = ys_test.cpu().detach().numpy()
 
     # flatten into a 1D array
-    ys_pred = ys_pred.reshape((len(ys_pred), ))
+    print(ys_pred.shape)
+    ys_pred = ys_pred.reshape((len(ys_pred[0]), ))
     ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
     print(xs_test.shape)
     print(xs_test[-series_num, :,-1].shape)
     xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
 
+    example_plot = plt.figure(1)
+
     plt.plot(ys_pred, color="orange")
     plt.plot(ys_true, color="blue")
     plt.plot(xs_true, color="pink")
-    plt.show()
+    example_plot.show()
+
+    loss_plot = plt.figure(2)
+    plt.plot(loss_per_epoch)
+    loss_plot.show()
+
+    input()
+    

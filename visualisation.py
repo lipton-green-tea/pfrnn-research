@@ -4,14 +4,14 @@ import torch
 import matplotlib.pyplot as plt
 
 
-def load_model():
+def load_model(model_path):
     model_config = {
         "num_particles": 64,
         "input_size": 20,
-        "hidden_dimension": 15 
+        "hidden_dimension": 50 
     }
     model = SVMParamterEstimator(model_config)
-    model.load_state_dict(torch.load("./models/pfrnn.pt"))
+    model.load_state_dict(torch.load(model_path))
     return model
 
 
@@ -24,8 +24,20 @@ def load_data():
 
 
 if __name__=="__main__":
+    # # First we need to load our previously trained model
+    # model1 = load_model("./models/pfrnn_epoch_0.pt")
+    # model2 = load_model("./models/pfrnn.pt")
+
+    # model1params = list(model1.parameters())
+    # model2params = list(model2.parameters())
+
+    # for i in [0, 1, 5]:
+    #     #print(torch.mean(model1params[i].data - model2params[i].data), i)
+    #     print(model1params[i].data.shape)
+    # 1/0
+
     # First we need to load our previously trained model
-    model = load_model()
+    model = load_model("./models/pfrnn.pt")
 
     # and init our model args (to default values in this case)
     model_args = ModelArgs()
@@ -45,6 +57,6 @@ if __name__=="__main__":
 
     # finally we plot this on a histogram to try and visualize
     # systematic error in the predictor
-    plt.hist2d(ys_pred_np, ys_test_np, bins=(25,25), cmap=plt.cm.jet)
+    plt.hist2d(ys_pred_np, ys_test_np, bins=(25,25), cmap=plt.cm.pink)
     plt.show()
     
