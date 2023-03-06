@@ -30,8 +30,8 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 2000,
-        "sequence_length": 60,
+        "samples": 8000,
+        "sequence_length": 70,
         "window_size": 20,
         "train_test_split": 0.8,
         "epochs": 0, # set to 0 if you don't want to train the model
@@ -39,8 +39,8 @@ if __name__=="__main__":
         "learning_rate": 0.002,
         "load_model_from_previous": True,
         "load_data_from_previous": True,
-        "save_models": True,
-        "model_path": "./models/pfrnn_epoch_113.pt",
+        "save_models": False,
+        "model_path": "./models/pfrnn_epoch_13.pt",
     }
 
     sv_parameters = SVL1Paramters(
@@ -58,9 +58,9 @@ if __name__=="__main__":
         l2_weight=0.5
     )
     model_config = {
-        "num_particles": 64,
+        "num_particles": 92,
         "input_size": config["window_size"],
-        "hidden_dimension": 50
+        "hidden_dimension": 70
     }
 
     # here we either load or generate our dataset
@@ -156,8 +156,8 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
-    #model = SVMParamterEstimator(model_config)
-    model = LSTM1(1, config["window_size"], 150, 1)
+    model = SVMParamterEstimator(model_config)
+    #model = LSTM1(1, config["window_size"], 150, 1)
     if torch.cuda.is_available():
         model.to('cuda')
     optimizer = torch.optim.AdamW(
@@ -186,6 +186,9 @@ if __name__=="__main__":
     for e in range(config["epochs"]):
         print(f"running epoch {e} out of {config['epochs']}")
         start_time = time.time()
+
+        # store each iterations losses in a separate list
+        training_loss.append([])
 
         iterations = math.ceil(len(xs_train) / config["batch_size"])
         for i in range(iterations):
@@ -219,7 +222,7 @@ if __name__=="__main__":
 
             # print our loss and save it in a list
             print(f"training loss: {loss}")
-            training_loss.append(loss.to('cpu').detach().numpy())
+            training_loss[e].append(loss.to('cpu').detach().item())
 
         # we now evaluate the model using our eval 
         with torch.no_grad():
@@ -230,7 +233,7 @@ if __name__=="__main__":
                 ys_test = ys_test.to('cuda')
             loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
             print(f"eval loss: {loss}")
-            loss_per_epoch.append(loss.to('cpu').detach().numpy())
+            loss_per_epoch.append(loss.to('cpu').detach().item())
 
         # save the model in between epochs
         if config["save_models"]:
@@ -256,7 +259,7 @@ if __name__=="__main__":
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
-    series_num = 0
+    series_num = 4
 
     print(xs_test[-series_num:(-series_num)+1].shape)
     single_series = xs_test[-series_num:(-series_num)+1]
@@ -270,7 +273,7 @@ if __name__=="__main__":
 
     # flatten into a 1D array
     print(ys_pred.shape)
-    ys_pred = ys_pred.reshape((len(ys_pred[0]), ))
+    ys_pred = ys_pred.reshape((len(ys_pred), ))
     ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
     print(xs_test.shape)
     print(xs_test[-series_num, :,-1].shape)
@@ -278,14 +281,49 @@ if __name__=="__main__":
 
     example_plot = plt.figure(1)
 
+    # plot our predicted volatility, real volatility and innovations
     plt.plot(ys_pred, color="orange")
     plt.plot(ys_true, color="blue")
     plt.plot(xs_true, color="pink")
     example_plot.show()
 
+    # below we plot our loss graphs
     loss_plot = plt.figure(2)
     plt.plot(loss_per_epoch)
+    # calculate mean training loss per epoch (i.e. mean across iterations)
+    training_loss = [sum(l)/len(l) for l in training_loss]
+    plt.plot(training_loss)
     loss_plot.show()
+
+    # create a plot that allows us to click through different plots
+    # class Index(object):
+    #     ind = 0
+    #     def next(self, event):
+    #         self.ind += 1 
+    #         i = self.ind %(len(funcs))
+    #         x,y,name = funcs[i]() # unpack tuple data
+    #         l.set_xdata(x) #set x value data
+    #         l.set_ydata(y) #set y value data
+    #         ax.title.set_text(name) # set title of graph
+    #         plt.draw()
+
+    #     def prev(self, event):
+    #         self.ind -= 1 
+    #         i  = self.ind %(len(funcs))
+    #         x,y, name = funcs[i]() #unpack tuple data
+    #         l.set_xdata(x) #set x value data
+    #         l.set_ydata(y) #set y value data
+    #         ax.title.set_text(name) #set title of graph
+    #         plt.draw()
+
+    # callback = Index()
+    # axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
+    # axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
+    # bnext = Button(axnext, 'Next')
+    # bnext.on_clicked(callback.next)
+    # bprev = Button(axprev, 'Previous')
+    # bprev.on_clicked(callback.prev)
+
 
     input()
     

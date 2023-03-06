@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 
 def load_model(model_path):
     model_config = {
-        "num_particles": 64,
+        "num_particles": 92,
         "input_size": 20,
-        "hidden_dimension": 50 
+        "hidden_dimension": 70
     }
     model = SVMParamterEstimator(model_config)
     model.load_state_dict(torch.load(model_path))
@@ -37,7 +37,7 @@ if __name__=="__main__":
     # 1/0
 
     # First we need to load our previously trained model
-    model = load_model("./models/pfrnn.pt")
+    model = load_model("./models/pfrnn_epoch_7.pt")
 
     # and init our model args (to default values in this case)
     model_args = ModelArgs()
@@ -57,6 +57,6 @@ if __name__=="__main__":
 
     # finally we plot this on a histogram to try and visualize
     # systematic error in the predictor
-    plt.hist2d(ys_pred_np, ys_test_np, bins=(25,25), cmap=plt.cm.pink)
+    plt.hist2d(ys_pred_np, ys_test_np, bins=(50,50), cmap=plt.cm.pink)
     plt.show()
     

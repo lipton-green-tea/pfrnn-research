@@ -32,15 +32,23 @@ class SVMParamterEstimator(nn.Module):
 
         self.hnn_dropout = nn.Dropout(self.dropout_rate)
 
-        linear_hidden_size = 200
+        # TODO: there is a better place to put these variables
+        # probably allow the user the pass in a list of numbers
+        linear_hidden_size_1 = 150
+        linear_hidden_size_2 = 50
         self.layer1 = nn.Sequential(
-            nn.Linear(self.hidden_dim, linear_hidden_size),
-            nn.Sigmoid()
+            nn.Linear(self.hidden_dim, linear_hidden_size_1),
+            nn.LeakyReLU()
         )
 
         self.layer2 = nn.Sequential(
-            nn.Linear(linear_hidden_size, self.output_dim),
-            nn.Sigmoid()
+            nn.Linear(linear_hidden_size_1, linear_hidden_size_2),
+            nn.LeakyReLU()
+        )
+
+        self.layer3 = nn.Sequential(
+            nn.Linear(linear_hidden_size_2, self.output_dim),
+            nn.LeakyReLU()
         )
 
     def init_hidden(self, batch_size):
@@ -97,6 +105,9 @@ class SVMParamterEstimator(nn.Module):
 
         y = self.layer2(y)
         pf_labels = self.layer2(pf_labels)
+
+        y = self.layer3(y)
+        pf_labels = self.layer3(pf_labels)
 
         y_out = y
         pf_out = pf_labels
