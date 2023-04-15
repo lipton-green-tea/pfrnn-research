@@ -30,17 +30,17 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 8000,
-        "sequence_length": 70,
-        "window_size": 20,
-        "train_test_split": 0.8,
+        "samples": 2000,
+        "sequence_length": 500,
+        "window_size": 25,
+        "train_test_split": 0.9,
         "epochs": 0, # set to 0 if you don't want to train the model
         "batch_size": 200,
-        "learning_rate": 0.002,
+        "learning_rate": 0.005,
         "load_model_from_previous": True,
         "load_data_from_previous": True,
         "save_models": False,
-        "model_path": "./models/pfrnn_epoch_13.pt",
+        "model_path": "./models/pfrnn_epoch_0.pt",
     }
 
     sv_parameters = SVL1Paramters(
@@ -60,7 +60,7 @@ if __name__=="__main__":
     model_config = {
         "num_particles": 92,
         "input_size": config["window_size"],
-        "hidden_dimension": 70
+        "hidden_dimension": 3
     }
 
     # here we either load or generate our dataset
@@ -218,6 +218,7 @@ if __name__=="__main__":
             # perform 1 step of gradient descent
             loss, log_loss, particle_pred = model.step(xs_batch,ys_batch,model_args)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
             # print our loss and save it in a list
@@ -259,7 +260,7 @@ if __name__=="__main__":
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
-    series_num = 4
+    series_num = 7
 
     print(xs_test[-series_num:(-series_num)+1].shape)
     single_series = xs_test[-series_num:(-series_num)+1]

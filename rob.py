@@ -28,7 +28,7 @@ class SVMParamterEstimator(nn.Module):
         self.dropout_rate = 0.0  # TODO: revert this to have some dropout
 
         self.rnn = PFLSTMCell(self.num_particles, total_emb,
-                    self.hidden_dim, 20, 20, resamp_alpha)
+                    self.hidden_dim, total_emb, total_emb, resamp_alpha)
 
         self.hnn_dropout = nn.Dropout(self.dropout_rate)
 
@@ -37,7 +37,7 @@ class SVMParamterEstimator(nn.Module):
         linear_hidden_size_1 = 150
         linear_hidden_size_2 = 50
         self.layer1 = nn.Sequential(
-            nn.Linear(self.hidden_dim, linear_hidden_size_1),
+            nn.Linear(self.hidden_dim, self.output_dim),
             nn.LeakyReLU()
         )
 
@@ -103,11 +103,11 @@ class SVMParamterEstimator(nn.Module):
         y = self.layer1(y)
         pf_labels = self.layer1(hidden_states)
 
-        y = self.layer2(y)
-        pf_labels = self.layer2(pf_labels)
+        # y = self.layer2(y)
+        # pf_labels = self.layer2(pf_labels)
 
-        y = self.layer3(y)
-        pf_labels = self.layer3(pf_labels)
+        # y = self.layer3(y)
+        # pf_labels = self.layer3(pf_labels)
 
         y_out = y
         pf_out = pf_labels
