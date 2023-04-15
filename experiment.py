@@ -1,4 +1,4 @@
-from stochastic_volatility import SVL1, SVL1Paramters
+from stochastic_volatility import SVL1, SVL1Paramters, HarveySV, HarveySVParamters
 from rob import SVMParamterEstimator, ModelArgs
 from lstm_model import LSTM1
 
@@ -31,25 +31,31 @@ if __name__=="__main__":
     # training config
     config = {
         "samples": 2000,
-        "sequence_length": 500,
-        "window_size": 25,
+        "sequence_length": 200,
+        "window_size": 10,
         "train_test_split": 0.9,
-        "epochs": 0, # set to 0 if you don't want to train the model
+        "epochs": 20, # set to 0 if you don't want to train the model
         "batch_size": 200,
         "learning_rate": 0.005,
-        "load_model_from_previous": True,
-        "load_data_from_previous": True,
+        "load_model_from_previous": False,
+        "load_data_from_previous": False,
         "save_models": False,
         "model_path": "./models/pfrnn_epoch_0.pt",
     }
 
-    sv_parameters = SVL1Paramters(
-        alpha=-0.00192640,
-        phi=0.972,
-        rho=-0.3179,
-        sigma=0.1495,
-        initial_innovation=0.5,
-        initial_volatility=0.5
+    # sv_parameters = SVL1Paramters(
+    #     alpha=-0.00192640,
+    #     phi=0.972,
+    #     rho=-0.3179,
+    #     sigma=0.1495,
+    #     initial_innovation=0.5,
+    #     initial_volatility=0.5
+    # )
+
+    sv_parameters = HarveySVParamters(
+        mu=2. * np.log(.7204), 
+        phi=.9807, 
+        tau=0.1489
     )
 
     # initialize model args to default values 
@@ -82,7 +88,7 @@ if __name__=="__main__":
         ys = []
 
         for s in range(config["samples"]):
-            volatility, innovations = SVL1.generate_data(config["sequence_length"], sv_parameters)
+            volatility, innovations = HarveySV.generate_data(config["sequence_length"], sv_parameters)
 
             # normalize values to between 0 and 1
             volatility = normalize(volatility)
