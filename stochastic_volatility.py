@@ -37,12 +37,10 @@ class SVL1(object):
 
 # model from Havey, A. (1990). Forecasting, Structural Time Series Models and the Kalman Filter. Cambridge University Press, New York.
 class HarveySVParamters():
-    def __init__(self, mu, tau, phi, initial_innovation=0, initial_volatility=0):
+    def __init__(self, mu, tau, phi):
         self.mu = mu
         self.tau = tau
         self.phi = phi
-        self.initial_innovation = initial_innovation
-        self.initial_volatility = initial_volatility
 
 
 class HarveySV(object):
@@ -60,6 +58,6 @@ class HarveySV(object):
             x = np.random.normal(loc=x_mean, scale=tau)
             volatility.append(x)
 
-        innovations = [np.random.normal(loc=0., scale=np.exp(.5 * x)) for x in volatility[1:]]
+        innovations = [0] + [np.random.normal(loc=0., scale=np.exp(.5 * x)) for x in volatility[1:]]
 
         return (volatility, innovations)
