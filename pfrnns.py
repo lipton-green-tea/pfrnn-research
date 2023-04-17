@@ -41,7 +41,19 @@ class PFRNNBaseCell(nn.Module):
             nn.LeakyReLU()
         )
 
-        self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
+        # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
+        self.fc_obs1 = nn.Sequential(
+            nn.Linear(self.ext_obs + self.h_dim, 100),
+            nn.Sigmoid()
+        )
+        self.fc_obs2 = nn.Sequential(
+            nn.Linear(100, 100),
+            nn.Sigmoid()
+        )
+        self.fc_obs3 = nn.Sequential(
+            nn.Linear(100, 1),
+            nn.Sigmoid()
+        )
 
         self.batch_norm = nn.BatchNorm1d(self.num_particles)
 
@@ -132,7 +144,9 @@ class PFLSTMCell(PFRNNBaseCell):
         h1 = torch.sigmoid(o) * torch.tanh(c1)
 
         att = torch.cat((obs, h1), dim=1)
-        logpdf_obs = self.fc_obs(att)
+        logpdf_obs = self.fc_obs1(att)
+        logpdf_obs = self.fc_obs2(logpdf_obs)
+        logpdf_obs = self.fc_obs3(logpdf_obs)
         # logpdf_obs = nn.functional.relu6(logpdf_obs).view(self.num_particles, -1, 1) - 3 # hack to shape the range obs logpdf_obs into [-3, 3] for numerical stability
         p1 = logpdf_obs.view(self.num_particles, -1, 1) + \
             p0.view(self.num_particles, -1, 1)
@@ -175,7 +189,9 @@ class PFGRUCell(PFRNNBaseCell):
         h1 = (1 - z) * n + z * h0
 
         att = torch.cat((h1, obs), dim=1)
-        logpdf_obs = self.fc_obs(att)
+        logpdf_obs = self.fc_obs1(att)
+        logpdf_obs = self.fc_obs2(logpdf_obs)
+        logpdf_obs = self.fc_obs3(logpdf_obs)
         # logpdf_obs = nn.functional.relu6(logpdf_obs) - 3 # hack to shape the range obs logpdf_obs into [-3, 3] for numerical stability
         p1 = logpdf_obs + p0
 

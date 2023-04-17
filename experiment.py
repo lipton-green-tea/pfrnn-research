@@ -30,11 +30,11 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 2000,
+        "samples": 1000,
         "sequence_length": 200,
         "window_size": 10,
         "train_test_split": 0.9,
-        "epochs": 20, # set to 0 if you don't want to train the model
+        "epochs": 3, # set to 0 if you don't want to train the model
         "batch_size": 200,
         "learning_rate": 0.005,
         "load_model_from_previous": False,
@@ -61,12 +61,12 @@ if __name__=="__main__":
     # initialize model args to default values 
     model_args = ModelArgs(
         l1_weight=0.5,
-        l2_weight=0.5
+        l2_weight=0.5,
     )
     model_config = {
         "num_particles": 92,
         "input_size": config["window_size"],
-        "hidden_dimension": 3
+        "hidden_dimension": 5
     }
 
     # here we either load or generate our dataset

@@ -36,20 +36,21 @@ class SVMParamterEstimator(nn.Module):
         # probably allow the user the pass in a list of numbers
         linear_hidden_size_1 = 150
         linear_hidden_size_2 = 50
+
         self.layer1 = nn.Sequential(
             nn.Linear(self.hidden_dim, self.output_dim),
             nn.LeakyReLU()
         )
 
-        self.layer2 = nn.Sequential(
-            nn.Linear(linear_hidden_size_1, linear_hidden_size_2),
-            nn.LeakyReLU()
-        )
+        # self.layer2 = nn.Sequential(
+        #     nn.Linear(linear_hidden_size_1, linear_hidden_size_2),
+        #     nn.LeakyReLU()
+        # )
 
-        self.layer3 = nn.Sequential(
-            nn.Linear(linear_hidden_size_2, self.output_dim),
-            nn.LeakyReLU()
-        )
+        # self.layer3 = nn.Sequential(
+        #     nn.Linear(linear_hidden_size_2, self.output_dim),
+        #     nn.LeakyReLU()
+        # )
 
     def init_hidden(self, batch_size):
         initializer = torch.rand if self.initialize == 'rand' else torch.zeros
