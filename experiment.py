@@ -64,9 +64,9 @@ if __name__=="__main__":
         l2_weight=0.5,
     )
     model_config = {
-        "num_particles": 92,
+        "num_particles": 75,
         "input_size": config["window_size"],
-        "hidden_dimension": 5
+        "hidden_dimension": 1
     }
 
     # here we either load or generate our dataset

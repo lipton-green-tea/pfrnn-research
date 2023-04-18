@@ -42,17 +42,12 @@ class PFRNNBaseCell(nn.Module):
         )
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
-        self.fc_obs1 = nn.Sequential(
+        self.fc_obs = nn.Sequential(
             nn.Linear(self.ext_obs + self.h_dim, 100),
-            nn.Sigmoid()
-        )
-        self.fc_obs2 = nn.Sequential(
+            nn.Sigmoid(),
             nn.Linear(100, 100),
-            nn.Sigmoid()
-        )
-        self.fc_obs3 = nn.Sequential(
+            nn.Sigmoid(),
             nn.Linear(100, 1),
-            nn.Sigmoid()
         )
 
         self.batch_norm = nn.BatchNorm1d(self.num_particles)
@@ -121,6 +116,14 @@ class PFLSTMCell(PFRNNBaseCell):
         self.fc_ih = nn.Linear(self.ext_act, 5 * self.h_dim)
         self.fc_hh = nn.Linear(self.h_dim, 5 * self.h_dim)
 
+        self.fc_trans = nn.Sequential(
+            nn.Linear(10 * self.h_dim, 150),
+            nn.Sigmoid(),
+            nn.Linear(150, 100),
+            nn.Sigmoid(),
+            nn.Linear(100, 5 * self.h_dim)
+        )
+
     def forward(self, input_, hx):
         h0, c0, p0 = hx
         batch_size = h0.size(0)
@@ -132,7 +135,8 @@ class PFLSTMCell(PFRNNBaseCell):
         act = self.act_extractor(input_)
 
         wi = self.fc_ih(act)
-        s = wh_b + wi
+        # s = wh_b + wi
+        s = self.fc_trans(torch.concat((wh_b, wi), dim=1))
         f, i, o, mu, var = torch.split(s, split_size_or_sections=self.h_dim,
                                        dim=1)
         g_ = self.reparameterize(mu, var).view(
@@ -144,9 +148,7 @@ class PFLSTMCell(PFRNNBaseCell):
         h1 = torch.sigmoid(o) * torch.tanh(c1)
 
         att = torch.cat((obs, h1), dim=1)
-        logpdf_obs = self.fc_obs1(att)
-        logpdf_obs = self.fc_obs2(logpdf_obs)
-        logpdf_obs = self.fc_obs3(logpdf_obs)
+        logpdf_obs = self.fc_obs(att)
         # logpdf_obs = nn.functional.relu6(logpdf_obs).view(self.num_particles, -1, 1) - 3 # hack to shape the range obs logpdf_obs into [-3, 3] for numerical stability
         p1 = logpdf_obs.view(self.num_particles, -1, 1) + \
             p0.view(self.num_particles, -1, 1)
@@ -189,9 +191,7 @@ class PFGRUCell(PFRNNBaseCell):
         h1 = (1 - z) * n + z * h0
 
         att = torch.cat((h1, obs), dim=1)
-        logpdf_obs = self.fc_obs1(att)
-        logpdf_obs = self.fc_obs2(logpdf_obs)
-        logpdf_obs = self.fc_obs3(logpdf_obs)
+        logpdf_obs = self.fc_obs(att)
         # logpdf_obs = nn.functional.relu6(logpdf_obs) - 3 # hack to shape the range obs logpdf_obs into [-3, 3] for numerical stability
         p1 = logpdf_obs + p0
 
