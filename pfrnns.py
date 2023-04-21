@@ -42,12 +42,30 @@ class PFRNNBaseCell(nn.Module):
         )
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
+        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 100)
+        self.fc_obs_l2 = nn.Linear(100, 100)
+        self.fc_obs_l3 = nn.Linear(100, 1)
+
+        # init weights to approximate a normal pdf
+        fc_obs_l1_weights = np.transpose(np.load("./models/layer_0_weights.npy"))
+        fc_obs_l1_biases = np.transpose(np.load("./models/layer_0_biases.npy"))
+        fc_obs_l2_weights = np.transpose(np.load("./models/layer_1_weights.npy"))
+        fc_obs_l2_biases = np.transpose(np.load("./models/layer_1_biases.npy"))
+        fc_obs_l3_weights = np.transpose(np.load("./models/layer_2_weights.npy"))
+        fc_obs_l3_biases = np.transpose(np.load("./models/layer_2_biases.npy"))
+        self.fc_obs_l1.weight.data = torch.from_numpy(fc_obs_l1_weights)
+        self.fc_obs_l1.bias.data = torch.from_numpy(fc_obs_l1_biases)
+        self.fc_obs_l2.weight.data = torch.from_numpy(fc_obs_l2_weights)
+        self.fc_obs_l2.bias.data = torch.from_numpy(fc_obs_l2_biases)
+        self.fc_obs_l3.weight.data = torch.from_numpy(fc_obs_l3_weights)
+        self.fc_obs_l3.bias.data = torch.from_numpy(fc_obs_l3_biases)
         self.fc_obs = nn.Sequential(
-            nn.Linear(self.ext_obs + self.h_dim, 100),
+            self.fc_obs_l1,
             nn.Sigmoid(),
-            nn.Linear(100, 100),
+            self.fc_obs_l2,
             nn.Sigmoid(),
-            nn.Linear(100, 1),
+            self.fc_obs_l3,
+            nn.Sigmoid(),
         )
 
         self.batch_norm = nn.BatchNorm1d(self.num_particles)
