@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 
-class PFRNNBaseCell(nn.Module):
+class PFRNN(nn.Module):
     def __init__(self, num_particles, input_size=1, hidden_size=1, ext_obs=1, resamp_alpha=0.1):
         """
         :param num_particles: number of particles for a PF-RNN
@@ -13,7 +13,7 @@ class PFRNNBaseCell(nn.Module):
         :param resamp_alpha: the control parameter \alpha for soft-resampling.
         We use the importance sampling with a proposal distribution q(i) = \alpha w_t^i + (1 - \alpha) (1 / K)
         """
-        super(PFRNNBaseCell, self).__init__()
+        super(PFRNN, self).__init__()
         self.num_particles = num_particles
         self.input_size = input_size
         self.h_dim = hidden_size
@@ -38,6 +38,12 @@ class PFRNNBaseCell(nn.Module):
         self.fc_obs_l2.bias.data = torch.from_numpy(fc_obs_l2_biases)
         self.fc_obs_l3.weight.data = torch.from_numpy(fc_obs_l3_weights)
         self.fc_obs_l3.bias.data = torch.from_numpy(fc_obs_l3_biases)
+        self.fc_obs_l1.weight.requires_grad = False
+        self.fc_obs_l1.bias.requires_grad = False
+        self.fc_obs_l2.weight.requires_grad = False
+        self.fc_obs_l2.bias.requires_grad = False
+        self.fc_obs_l3.weight.requires_grad = False
+        self.fc_obs_l3.bias.requires_grad = False
         self.fc_obs = nn.Sequential(
             self.fc_obs_l1,
             nn.Sigmoid(),
@@ -52,13 +58,35 @@ class PFRNNBaseCell(nn.Module):
         # init the layers for our transition function
         # this will take as input a hidden state (volatility) and normaly dist. random float
         # TODO: let it take parameter values as input
+
+        self.fc_trans_l1 = nn.Linear(self.h_dim + 1, 100)
+        self.fc_trans_l2 = nn.Linear(100, 100)
+        self.fc_trans_l3 = nn.Linear(100, 1)
+
+        fc_trans_l1_weights = np.transpose(np.load("./models/trans_layer_0_weights.npy"))
+        fc_trans_l1_biases = np.transpose(np.load("./models/trans_layer_0_biases.npy"))
+        fc_trans_l2_weights = np.transpose(np.load("./models/trans_layer_1_weights.npy"))
+        fc_trans_l2_biases = np.transpose(np.load("./models/trans_layer_1_biases.npy"))
+        fc_trans_l3_weights = np.transpose(np.load("./models/trans_layer_2_weights.npy"))
+        fc_trans_l3_biases = np.transpose(np.load("./models/trans_layer_2_biases.npy"))
+        self.fc_trans_l1.weight.data = torch.from_numpy(fc_trans_l1_weights)
+        self.fc_trans_l1.bias.data = torch.from_numpy(fc_trans_l1_biases)
+        self.fc_trans_l2.weight.data = torch.from_numpy(fc_trans_l2_weights)
+        self.fc_trans_l2.bias.data = torch.from_numpy(fc_trans_l2_biases)
+        self.fc_trans_l3.weight.data = torch.from_numpy(fc_trans_l3_weights)
+        self.fc_trans_l3.bias.data = torch.from_numpy(fc_trans_l3_biases)
+        self.fc_obs_l1.weight.requires_grad = False
+        self.fc_obs_l1.bias.requires_grad = False
+        self.fc_obs_l2.weight.requires_grad = False
+        self.fc_obs_l2.bias.requires_grad = False
+        self.fc_obs_l3.weight.requires_grad = False
+        self.fc_obs_l3.bias.requires_grad = False
         self.fc_trans = nn.Sequential(
-            nn.Linear(self.h_dim + 1, 100),
+            self.fc_trans_l1,
             nn.Sigmoid(),
-            nn.Linear(100, 100),
+            self.fc_trans_l2,
             nn.Sigmoid(),
-            nn.Linear(100, self.h_dim),
-            nn.Sigmoid()
+            self.fc_trans_l3
         )
 
     def resampling(self, particles, prob):

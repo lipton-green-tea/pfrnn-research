@@ -1,5 +1,6 @@
 from stochastic_volatility import SVL1, SVL1Paramters, HarveySV, HarveySVParamters
 from rob import SVMParamterEstimator, ModelArgs
+from harvey_sv_model import HarveySVPF
 from lstm_model import LSTM1
 
 import os
@@ -30,17 +31,17 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 1000,
-        "sequence_length": 200,
-        "window_size": 10,
+        "samples": 200,
+        "sequence_length": 600,
+        "window_size": 1,
         "train_test_split": 0.9,
-        "epochs": 3, # set to 0 if you don't want to train the model
+        "epochs": 0, # set to 0 if you don't want to train the model
         "batch_size": 200,
         "learning_rate": 0.005,
         "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": False,
-        "model_path": "./models/pfrnn_epoch_0.pt",
+        "model_path": "./models/pfrnn_epoch_2.pt",
     }
 
     # sv_parameters = SVL1Paramters(
@@ -64,7 +65,7 @@ if __name__=="__main__":
         l2_weight=0.5,
     )
     model_config = {
-        "num_particles": 75,
+        "num_particles": 200,
         "input_size": config["window_size"],
         "hidden_dimension": 1
     }
@@ -91,8 +92,12 @@ if __name__=="__main__":
             volatility, innovations = HarveySV.generate_data(config["sequence_length"], sv_parameters)
 
             # normalize values to between 0 and 1
-            volatility = normalize(volatility)
-            innovations = normalize(innovations)
+            #volatility = normalize(volatility)
+            #innovations = normalize(innovations)
+            
+            # convert to numpy arrays
+            volatility = np.array(volatility)
+            innovations = np.array(innovations)
 
             # below we create several windows of observations
             window_size = config["window_size"]
@@ -162,7 +167,8 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
-    model = SVMParamterEstimator(model_config)
+    model = HarveySVPF(model_config)
+    #model = SVMParamterEstimator(model_config)
     #model = LSTM1(1, config["window_size"], 150, 1)
     if torch.cuda.is_available():
         model.to('cuda')
@@ -289,9 +295,10 @@ if __name__=="__main__":
     example_plot = plt.figure(1)
 
     # plot our predicted volatility, real volatility and innovations
-    plt.plot(ys_pred, color="orange")
-    plt.plot(ys_true, color="blue")
-    plt.plot(xs_true, color="pink")
+    plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.2)
+    plt.plot(ys_pred, color="orange", label="pred")
+    plt.plot(ys_true, color="blue", label="true")
+    example_plot.legend(loc="upper left")
     example_plot.show()
 
     # below we plot our loss graphs
