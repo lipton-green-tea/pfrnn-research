@@ -9,6 +9,7 @@ import torch
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 
 
 if __name__=="__main__":
@@ -272,72 +273,87 @@ if __name__=="__main__":
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
-    series_num = 7
+    def create_plot_data(series_num):
 
-    print(xs_test[-series_num:(-series_num)+1].shape)
-    single_series = xs_test[-series_num:(-series_num)+1]
-    if torch.cuda.is_available():
-                single_series = single_series.to('cuda')
-    ys_pred, particle_pred = model.forward(single_series)
+        single_series = xs_test[-series_num:(-series_num)+1]
+        if torch.cuda.is_available():
+                    single_series = single_series.to('cuda')
+        ys_pred, particle_pred = model.forward(single_series)
 
-    # convert to numpy arrays
-    ys_pred = ys_pred.cpu().detach().numpy()
-    ys_true = ys_test.cpu().detach().numpy()
+        # convert to numpy arrays
+        ys_pred = ys_pred.cpu().detach().numpy()
+        ys_true = ys_test.cpu().detach().numpy()
 
-    # flatten into a 1D array
-    print(ys_pred.shape)
-    ys_pred = ys_pred.reshape((len(ys_pred), ))
-    ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
-    print(xs_test.shape)
-    print(xs_test[-series_num, :,-1].shape)
-    xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
+        # flatten into a 1D array
+        ys_pred = ys_pred.reshape((len(ys_pred), ))
+        ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
+        xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
 
-    example_plot = plt.figure(1)
+        return ys_pred, ys_true, xs_true
+
 
     # plot our predicted volatility, real volatility and innovations
-    plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.2)
-    plt.plot(ys_pred, color="orange", label="pred")
-    plt.plot(ys_true, color="blue", label="true")
-    example_plot.legend(loc="upper left")
-    example_plot.show()
+    # ys_pred, ys_true, xs_true = create_plot_data(7)
+    # example_plot = plt.figure(1)
+    # plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.2)
+    # plt.plot(ys_pred, color="orange", label="pred")
+    # plt.plot(ys_true, color="blue", label="true")
+    # example_plot.legend(loc="upper left")
+    # example_plot.show()
 
-    # below we plot our loss graphs
-    loss_plot = plt.figure(2)
-    plt.plot(loss_per_epoch)
-    # calculate mean training loss per epoch (i.e. mean across iterations)
-    training_loss = [sum(l)/len(l) for l in training_loss]
-    plt.plot(training_loss)
-    loss_plot.show()
+    # # below we plot our loss graphs
+    # loss_plot = plt.figure(2)
+    # plt.plot(loss_per_epoch)
+    # # calculate mean training loss per epoch (i.e. mean across iterations)
+    # training_loss = [sum(l)/len(l) for l in training_loss]
+    # plt.plot(training_loss)
+    # loss_plot.show()
 
     # create a plot that allows us to click through different plots
-    # class Index(object):
-    #     ind = 0
-    #     def next(self, event):
-    #         self.ind += 1 
-    #         i = self.ind %(len(funcs))
-    #         x,y,name = funcs[i]() # unpack tuple data
-    #         l.set_xdata(x) #set x value data
-    #         l.set_ydata(y) #set y value data
-    #         ax.title.set_text(name) # set title of graph
-    #         plt.draw()
+    fig, ax = plt.subplots()
+    plt.subplots_adjust(bottom=0.2)
+    ys_pred, ys_true, xs_true = create_plot_data(7)
 
-    #     def prev(self, event):
-    #         self.ind -= 1 
-    #         i  = self.ind %(len(funcs))
-    #         x,y, name = funcs[i]() #unpack tuple data
-    #         l.set_xdata(x) #set x value data
-    #         l.set_ydata(y) #set y value data
-    #         ax.title.set_text(name) #set title of graph
-    #         plt.draw()
+    xs_true_line, = plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.3)
+    ys_pred_line, = plt.plot(ys_pred, color="orange", label="pred")
+    ys_true_line, = plt.plot(ys_true, color="blue", label="true")
+    plt.legend(loc="upper left")
 
-    # callback = Index()
-    # axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
-    # axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
-    # bnext = Button(axnext, 'Next')
-    # bnext.on_clicked(callback.next)
-    # bprev = Button(axprev, 'Previous')
-    # bprev.on_clicked(callback.prev)
+    class Index(object):
+        ind = 7
+        def next(self, event):
+            self.ind += 1 
+            self.update()
 
+        def prev(self, event):
+            self.ind -= 1 
+            self.update()
+
+        def update(self):
+            i  = self.ind %(len(xs_test))
+            ys_pred,ys_true,xs_true = create_plot_data(i) #unpack tuple data
+            y_data = list(range(len(ys_pred)))
+            ys_pred_line.set_ydata(ys_pred)
+            ys_pred_line.set_xdata(y_data)
+            ys_true_line.set_ydata(ys_true)
+            ys_true_line.set_xdata(y_data)
+            xs_true_line.set_ydata(xs_true)
+            xs_true_line.set_xdata(y_data)
+            ax.set_ylim(
+                min(min(xs_true), min(ys_pred), min(ys_true)), 
+                max(max(xs_true), max(ys_pred), max(ys_true))
+            )
+            plt.draw()
+        
+    callback = Index()
+    axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
+    axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
+    bnext = Button(axnext, 'Next')
+    bnext.on_clicked(callback.next)
+    bprev = Button(axprev, 'Previous')
+    bprev.on_clicked(callback.prev)
+
+    plt.show()
 
     input()
     
