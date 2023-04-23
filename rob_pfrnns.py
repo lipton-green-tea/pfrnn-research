@@ -19,6 +19,8 @@ class PFRNN(nn.Module):
         self.h_dim = hidden_size
         self.ext_obs = ext_obs
         self.resamp_alpha = resamp_alpha
+        self.train_obs_model = True
+        self.train_trans_model = True
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
         self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 100)
@@ -38,12 +40,12 @@ class PFRNN(nn.Module):
         self.fc_obs_l2.bias.data = torch.from_numpy(fc_obs_l2_biases)
         self.fc_obs_l3.weight.data = torch.from_numpy(fc_obs_l3_weights)
         self.fc_obs_l3.bias.data = torch.from_numpy(fc_obs_l3_biases)
-        self.fc_obs_l1.weight.requires_grad = False
-        self.fc_obs_l1.bias.requires_grad = False
-        self.fc_obs_l2.weight.requires_grad = False
-        self.fc_obs_l2.bias.requires_grad = False
-        self.fc_obs_l3.weight.requires_grad = False
-        self.fc_obs_l3.bias.requires_grad = False
+        self.fc_obs_l1.weight.requires_grad = self.train_obs_model
+        self.fc_obs_l1.bias.requires_grad = self.train_obs_model
+        self.fc_obs_l2.weight.requires_grad = self.train_obs_model
+        self.fc_obs_l2.bias.requires_grad = self.train_obs_model
+        self.fc_obs_l3.weight.requires_grad = self.train_obs_model
+        self.fc_obs_l3.bias.requires_grad = self.train_obs_model
         self.fc_obs = nn.Sequential(
             self.fc_obs_l1,
             nn.Sigmoid(),
@@ -75,12 +77,12 @@ class PFRNN(nn.Module):
         self.fc_trans_l2.bias.data = torch.from_numpy(fc_trans_l2_biases)
         self.fc_trans_l3.weight.data = torch.from_numpy(fc_trans_l3_weights)
         self.fc_trans_l3.bias.data = torch.from_numpy(fc_trans_l3_biases)
-        self.fc_obs_l1.weight.requires_grad = False
-        self.fc_obs_l1.bias.requires_grad = False
-        self.fc_obs_l2.weight.requires_grad = False
-        self.fc_obs_l2.bias.requires_grad = False
-        self.fc_obs_l3.weight.requires_grad = False
-        self.fc_obs_l3.bias.requires_grad = False
+        self.fc_obs_l1.weight.requires_grad = self.train_trans_model
+        self.fc_obs_l1.bias.requires_grad = self.train_trans_model
+        self.fc_obs_l2.weight.requires_grad = self.train_trans_model
+        self.fc_obs_l2.bias.requires_grad = self.train_trans_model
+        self.fc_obs_l3.weight.requires_grad = self.train_trans_model
+        self.fc_obs_l3.bias.requires_grad = self.train_trans_model
         self.fc_trans = nn.Sequential(
             self.fc_trans_l1,
             nn.Sigmoid(),

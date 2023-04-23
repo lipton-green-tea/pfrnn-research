@@ -31,17 +31,17 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 200,
-        "sequence_length": 600,
+        "samples": 1000,
+        "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,
         "epochs": 0, # set to 0 if you don't want to train the model
-        "batch_size": 200,
-        "learning_rate": 0.005,
-        "load_model_from_previous": False,
+        "batch_size": 10,
+        "learning_rate": 0.0005,
+        "load_model_from_previous": True,
         "load_data_from_previous": False,
         "save_models": False,
-        "model_path": "./models/pfrnn_epoch_2.pt",
+        "model_path": "./models/pfrnn_epoch_1.pt",
     }
 
     # sv_parameters = SVL1Paramters(
@@ -65,7 +65,7 @@ if __name__=="__main__":
         l2_weight=0.5,
     )
     model_config = {
-        "num_particles": 200,
+        "num_particles": 128,
         "input_size": config["window_size"],
         "hidden_dimension": 1
     }
