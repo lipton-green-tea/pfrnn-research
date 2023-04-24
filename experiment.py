@@ -36,12 +36,13 @@ if __name__=="__main__":
         "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,
-        "epochs": 0, # set to 0 if you don't want to train the model
+        "epochs": 2, # set to 0 if you don't want to train the model
         "batch_size": 10,
         "learning_rate": 0.0005,
         "load_model_from_previous": True,
         "load_data_from_previous": False,
-        "save_models": False,
+        "save_models": True,
+        "base_path": "./models/harvey_pfrnn_second_training",
         "model_path": "./models/pfrnn_epoch_1.pt",
     }
 
@@ -251,7 +252,7 @@ if __name__=="__main__":
 
         # save the model in between epochs
         if config["save_models"]:
-            torch.save(model.state_dict(), f"./models/pfrnn_epoch_{e}.pt")
+            torch.save(model.state_dict(), f"{config['base_path']}_{e}.pt")
         
         print(f"epoch {e} took {time.time() - start_time} seconds")
 
@@ -283,13 +284,23 @@ if __name__=="__main__":
         # convert to numpy arrays
         ys_pred = ys_pred.cpu().detach().numpy()
         ys_true = ys_test.cpu().detach().numpy()
+        particle_pred = particle_pred.cpu().detach().numpy()
 
         # flatten into a 1D array
         ys_pred = ys_pred.reshape((len(ys_pred), ))
         ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
         xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
+        particle_pred_y = particle_pred.flatten()
 
-        return ys_pred, ys_true, xs_true
+        # create particle pred y
+        num_particles = particle_pred.shape[1]
+        sequence_length = particle_pred.shape[0]
+        particle_pred_x = np.zeros(num_particles * sequence_length)
+        for xi in range(0, sequence_length):
+            for pi in range(0, num_particles):
+                particle_pred_x[xi * num_particles + pi] = xi
+
+        return ys_pred, ys_true, xs_true, particle_pred_x, particle_pred_y
 
 
     # plot our predicted volatility, real volatility and innovations
@@ -310,13 +321,22 @@ if __name__=="__main__":
     # loss_plot.show()
 
     # create a plot that allows us to click through different plots
+
+    plot_innovation = False
+    plot_particles = True
+    const_min_lim = -3
+    const_max_lim = 3
+
     fig, ax = plt.subplots()
     plt.subplots_adjust(bottom=0.2)
-    ys_pred, ys_true, xs_true = create_plot_data(7)
+    ys_pred, ys_true, xs_true, particle_x, particle_y = create_plot_data(7)
 
-    xs_true_line, = plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.3)
     ys_pred_line, = plt.plot(ys_pred, color="orange", label="pred")
     ys_true_line, = plt.plot(ys_true, color="blue", label="true")
+    if plot_innovation:
+        xs_true_line, = plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.3)
+    if plot_particles:
+        particle_plot = plt.scatter(particle_x, particle_y, color="lightskyblue", label="particles", s=0.04)
     plt.legend(loc="upper left")
 
     class Index(object):
@@ -331,17 +351,33 @@ if __name__=="__main__":
 
         def update(self):
             i  = self.ind %(len(xs_test))
-            ys_pred,ys_true,xs_true = create_plot_data(i) #unpack tuple data
+            ys_pred,ys_true,xs_true,particle_x, particle_y = create_plot_data(i) #unpack tuple data
             y_data = list(range(len(ys_pred)))
             ys_pred_line.set_ydata(ys_pred)
             ys_pred_line.set_xdata(y_data)
             ys_true_line.set_ydata(ys_true)
             ys_true_line.set_xdata(y_data)
-            xs_true_line.set_ydata(xs_true)
-            xs_true_line.set_xdata(y_data)
+            if plot_innovation:
+                xs_true_line.set_ydata(xs_true)
+                xs_true_line.set_xdata(y_data)
+            if plot_particles:
+                particle_plot.set_offsets(np.column_stack((particle_x, particle_y)))
+            
+            y_min = min(min(ys_pred), min(ys_true))
+            y_max = max(max(ys_pred), max(ys_true))
+            if plot_innovation:
+                y_min = min(y_min, min(xs_true))
+                y_max = max(y_max, max(xs_true))
+            if plot_particles:
+                y_min = min(y_min, min(particle_y))
+                y_max = max(y_max, max(particle_y))
+            if const_min_lim:
+                y_min = const_min_lim
+            if const_max_lim:
+                y_max = const_max_lim
             ax.set_ylim(
-                min(min(xs_true), min(ys_pred), min(ys_true)), 
-                max(max(xs_true), max(ys_pred), max(ys_true))
+                y_min, 
+                y_max
             )
             plt.draw()
         
