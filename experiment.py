@@ -236,7 +236,8 @@ if __name__=="__main__":
             optimizer.step()
 
             # print our loss and save it in a list
-            print(f"training loss: {loss}")
+            estimated_time_remaining = int(((time.time() - start_time) / (i + 1)) * (iterations - i - 1))
+            print(f"[{i + 1}/{iterations}] training loss: {loss}   [{estimated_time_remaining}s remaining]")
             training_loss[e].append(loss.to('cpu').detach().item())
 
         # we now evaluate the model using our eval 
