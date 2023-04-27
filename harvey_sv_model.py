@@ -46,6 +46,14 @@ class HarveySVPF(nn.Module):
 
         return hidden
 
+
+    def detach_hidden(self, hidden):
+        if isinstance(hidden, tuple):
+            return tuple([h.detach() for h in hidden])
+        else:
+            return hidden.detach()
+
+
     def forward(self, observations):
         batch_size = observations.size(0)
         embedding = observations

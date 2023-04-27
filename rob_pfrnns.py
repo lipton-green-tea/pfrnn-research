@@ -134,7 +134,10 @@ class PFRNN(nn.Module):
         h0, p0 = hx
         batch_size = h0.size(0)
 
-        random_input = torch.FloatTensor(h0.shape).normal_()
+        if torch.cuda.is_available():
+            random_input = torch.cuda.FloatTensor(h0.shape).normal_()
+        else:
+            random_input = torch.FloatTensor(h0.shape).normal_()
         h1 = self.fc_trans(torch.concat((h0, random_input), dim=1))
         
         obs_liklihood = self.fc_obs(torch.concat((h1, input_), dim=1))

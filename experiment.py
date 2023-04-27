@@ -44,6 +44,7 @@ if __name__=="__main__":
         "save_models": True,
         "base_path": "./models/harvey_pfrnn_second_training",
         "model_path": "./models/pfrnn_epoch_1.pt",
+        "use_gpu": False
     }
 
     # sv_parameters = SVL1Paramters(
@@ -172,7 +173,7 @@ if __name__=="__main__":
     model = HarveySVPF(model_config)
     #model = SVMParamterEstimator(model_config)
     #model = LSTM1(1, config["window_size"], 150, 1)
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and config["use_gpu"]:
         model.to('cuda')
     optimizer = torch.optim.AdamW(
             model.parameters(), lr=config["learning_rate"])
@@ -181,8 +182,13 @@ if __name__=="__main__":
     # iteration/checkpoint
     if config["load_model_from_previous"] and \
        os.path.isfile(config["model_path"]):
+        # we need to figure out what device we are using so we can map the state dict
+        # to that device
+        current_device = torch.device("cpu")
+        if torch.cuda.is_available() and config["use_gpu"]:
+            current_device = torch.device("cuda")
         print("loading model from checkpoint")
-        model.load_state_dict(torch.load(config["model_path"]))
+        model.load_state_dict(torch.load(config["model_path"], map_location=current_device))
 
     # step 3: train the model
     # 
@@ -225,7 +231,7 @@ if __name__=="__main__":
             optimizer.zero_grad()
 
             # convert tensors to cuda if available
-            if torch.cuda.is_available():
+            if torch.cuda.is_available() and config["use_gpu"]:
                 xs_batch = xs_batch.to('cuda')
                 ys_batch = ys_batch.to('cuda')
 
@@ -244,7 +250,7 @@ if __name__=="__main__":
         with torch.no_grad():
             model.eval()
             model.zero_grad()
-            if torch.cuda.is_available():
+            if torch.cuda.is_available() and config["use_gpu"]:
                 xs_test = xs_test.to('cuda')
                 ys_test = ys_test.to('cuda')
             loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
@@ -278,7 +284,7 @@ if __name__=="__main__":
     def create_plot_data(series_num):
 
         single_series = xs_test[-series_num:(-series_num)+1]
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and config["use_gpu"]:
                     single_series = single_series.to('cuda')
         ys_pred, particle_pred = model.forward(single_series)
 
