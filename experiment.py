@@ -32,19 +32,19 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 100,
-        "sequence_length": 100,
+        "samples": 6000,
+        "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,
         "epochs": 0, # set to 0 if you don't want to train the model
-        "batch_size": 10,
+        "batch_size": 30,
         "learning_rate": 0.0005,
-        "load_model_from_previous": False,
-        "load_data_from_previous": False,
+        "load_model_from_previous": True,
+        "load_data_from_previous": True,
         "save_models": True,
-        "base_path": "./models/harvey_pfrnn_second_training",
-        "model_path": "./models/pfrnn_epoch_1.pt",
-        "use_gpu": False
+        "base_path": "./models/harvey_big_pfrnn",
+        "model_path": "./models/harvey_big_pfrnn_9.pt",
+        "use_gpu": True
     }
 
     # sv_parameters = SVL1Paramters(
