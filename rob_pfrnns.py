@@ -23,35 +23,47 @@ class PFRNN(nn.Module):
         self.train_trans_model = True
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
-        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 100)
-        self.fc_obs_l2 = nn.Linear(100, 100)
-        self.fc_obs_l3 = nn.Linear(100, 1)
+        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 140)
+        self.fc_obs_l2 = nn.Linear(140, 100)
+        self.fc_obs_l3 = nn.Linear(100, 100)
+        self.fc_obs_l4 = nn.Linear(100, 1)
 
         # init weights to approximate a normal pdf
-        fc_obs_l1_weights = np.transpose(np.load("./models/layer_0_weights.npy"))
-        fc_obs_l1_biases = np.transpose(np.load("./models/layer_0_biases.npy"))
-        fc_obs_l2_weights = np.transpose(np.load("./models/layer_1_weights.npy"))
-        fc_obs_l2_biases = np.transpose(np.load("./models/layer_1_biases.npy"))
-        fc_obs_l3_weights = np.transpose(np.load("./models/layer_2_weights.npy"))
-        fc_obs_l3_biases = np.transpose(np.load("./models/layer_2_biases.npy"))
+        fc_obs_l1_weights = np.transpose(np.load("./models/obs_layer_0_weights.npy"))
+        fc_obs_l1_biases = np.transpose(np.load("./models/obs_layer_0_biases.npy"))
+        fc_obs_l2_weights = np.transpose(np.load("./models/obs_layer_1_weights.npy"))
+        fc_obs_l2_biases = np.transpose(np.load("./models/obs_layer_1_biases.npy"))
+        fc_obs_l3_weights = np.transpose(np.load("./models/obs_layer_2_weights.npy"))
+        fc_obs_l3_biases = np.transpose(np.load("./models/obs_layer_2_biases.npy"))
+        fc_obs_l4_weights = np.transpose(np.load("./models/obs_layer_3_weights.npy"))
+        fc_obs_l4_biases = np.transpose(np.load("./models/obs_layer_3_biases.npy"))
         self.fc_obs_l1.weight.data = torch.from_numpy(fc_obs_l1_weights)
         self.fc_obs_l1.bias.data = torch.from_numpy(fc_obs_l1_biases)
         self.fc_obs_l2.weight.data = torch.from_numpy(fc_obs_l2_weights)
         self.fc_obs_l2.bias.data = torch.from_numpy(fc_obs_l2_biases)
         self.fc_obs_l3.weight.data = torch.from_numpy(fc_obs_l3_weights)
         self.fc_obs_l3.bias.data = torch.from_numpy(fc_obs_l3_biases)
+        self.fc_obs_l4.weight.data = torch.from_numpy(fc_obs_l4_weights)
+        self.fc_obs_l4.bias.data = torch.from_numpy(fc_obs_l4_biases)
         self.fc_obs_l1.weight.requires_grad = self.train_obs_model
         self.fc_obs_l1.bias.requires_grad = self.train_obs_model
         self.fc_obs_l2.weight.requires_grad = self.train_obs_model
         self.fc_obs_l2.bias.requires_grad = self.train_obs_model
         self.fc_obs_l3.weight.requires_grad = self.train_obs_model
         self.fc_obs_l3.bias.requires_grad = self.train_obs_model
+        self.fc_obs_l4.weight.requires_grad = self.train_obs_model
+        self.fc_obs_l4.bias.requires_grad = self.train_obs_model
         self.fc_obs = nn.Sequential(
             self.fc_obs_l1,
+            nn.Dropout(0.2),
             nn.Sigmoid(),
             self.fc_obs_l2,
+            nn.Dropout(0.2),
             nn.Sigmoid(),
             self.fc_obs_l3,
+            nn.Dropout(0.2),
+            nn.Sigmoid(),
+            self.fc_obs_l4,
             nn.Sigmoid(),
         )
 
@@ -61,34 +73,46 @@ class PFRNN(nn.Module):
         # this will take as input a hidden state (volatility) and normaly dist. random float
         # TODO: let it take parameter values as input
 
-        self.fc_trans_l1 = nn.Linear(self.h_dim + 1, 100)
-        self.fc_trans_l2 = nn.Linear(100, 100)
-        self.fc_trans_l3 = nn.Linear(100, 1)
+        self.fc_trans_l1 = nn.Linear(self.h_dim + 1, 140)
+        self.fc_trans_l2 = nn.Linear(140, 100)
+        self.fc_trans_l3 = nn.Linear(100, 100)
+        self.fc_trans_l4 = nn.Linear(100, 1)
 
-        fc_trans_l1_weights = np.transpose(np.load("./models/trans_layer_0_weights.npy"))
-        fc_trans_l1_biases = np.transpose(np.load("./models/trans_layer_0_biases.npy"))
-        fc_trans_l2_weights = np.transpose(np.load("./models/trans_layer_1_weights.npy"))
-        fc_trans_l2_biases = np.transpose(np.load("./models/trans_layer_1_biases.npy"))
-        fc_trans_l3_weights = np.transpose(np.load("./models/trans_layer_2_weights.npy"))
-        fc_trans_l3_biases = np.transpose(np.load("./models/trans_layer_2_biases.npy"))
+        fc_trans_l1_weights = np.transpose(np.load("./models/trans1_layer_0_weights.npy"))
+        fc_trans_l1_biases = np.transpose(np.load("./models/trans1_layer_0_biases.npy"))
+        fc_trans_l2_weights = np.transpose(np.load("./models/trans1_layer_1_weights.npy"))
+        fc_trans_l2_biases = np.transpose(np.load("./models/trans1_layer_1_biases.npy"))
+        fc_trans_l3_weights = np.transpose(np.load("./models/trans1_layer_2_weights.npy"))
+        fc_trans_l3_biases = np.transpose(np.load("./models/trans1_layer_2_biases.npy"))
+        fc_trans_l4_weights = np.transpose(np.load("./models/trans1_layer_3_weights.npy"))
+        fc_trans_l4_biases = np.transpose(np.load("./models/trans1_layer_3_biases.npy"))
         self.fc_trans_l1.weight.data = torch.from_numpy(fc_trans_l1_weights)
         self.fc_trans_l1.bias.data = torch.from_numpy(fc_trans_l1_biases)
         self.fc_trans_l2.weight.data = torch.from_numpy(fc_trans_l2_weights)
         self.fc_trans_l2.bias.data = torch.from_numpy(fc_trans_l2_biases)
         self.fc_trans_l3.weight.data = torch.from_numpy(fc_trans_l3_weights)
         self.fc_trans_l3.bias.data = torch.from_numpy(fc_trans_l3_biases)
-        self.fc_obs_l1.weight.requires_grad = self.train_trans_model
-        self.fc_obs_l1.bias.requires_grad = self.train_trans_model
-        self.fc_obs_l2.weight.requires_grad = self.train_trans_model
-        self.fc_obs_l2.bias.requires_grad = self.train_trans_model
-        self.fc_obs_l3.weight.requires_grad = self.train_trans_model
-        self.fc_obs_l3.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l4.weight.data = torch.from_numpy(fc_trans_l4_weights)
+        self.fc_trans_l4.bias.data = torch.from_numpy(fc_trans_l4_biases)
+        self.fc_trans_l1.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l1.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l2.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l2.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l3.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l3.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l4.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l4.bias.requires_grad = self.train_trans_model
         self.fc_trans = nn.Sequential(
             self.fc_trans_l1,
+            nn.Dropout(0.2),
             nn.Sigmoid(),
             self.fc_trans_l2,
+            nn.Dropout(0.2),
             nn.Sigmoid(),
-            self.fc_trans_l3
+            self.fc_trans_l3,
+            nn.Dropout(0.2),
+            nn.Sigmoid(),
+            self.fc_trans_l4,
         )
 
     def resampling(self, particles, prob):

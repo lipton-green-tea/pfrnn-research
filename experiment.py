@@ -32,14 +32,14 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 1000,
-        "sequence_length": 300,
+        "samples": 100,
+        "sequence_length": 100,
         "window_size": 1,
         "train_test_split": 0.9,
-        "epochs": 2, # set to 0 if you don't want to train the model
+        "epochs": 0, # set to 0 if you don't want to train the model
         "batch_size": 10,
         "learning_rate": 0.0005,
-        "load_model_from_previous": True,
+        "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
         "base_path": "./models/harvey_pfrnn_second_training",
@@ -277,7 +277,11 @@ if __name__=="__main__":
     # 1. a graph of the loss over epochs
     # 2. a graph showing the model fit to data
 
+    print("eval loss: ")
     print(loss_per_epoch)
+
+    print("training loss: ")
+    print([sum(iter_loss)/len(iter_loss) for iter_loss in training_loss])
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
