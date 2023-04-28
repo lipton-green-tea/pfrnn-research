@@ -285,7 +285,7 @@ if __name__=="__main__":
     print(training_loss)
 
     # write the loss to a file
-    loss_file = open('loss.txt','w')
+    loss_file = open('./saved_loss/loss.txt','w')
     loss_file.write(str(loss_per_epoch)+"\n")
     loss_file.write(str(training_loss)+"\n")
 
