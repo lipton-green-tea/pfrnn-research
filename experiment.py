@@ -42,9 +42,9 @@ if __name__=="__main__":
         "load_model_from_previous": True,
         "load_data_from_previous": False,
         "save_models": True,
-        "base_path": "./models/harvey_pfrnn_third_training",
-        "model_path": "./models/pfrnn_epoch_1.pt",
-        "use_gpu": False
+        "base_path": "./models/harvey_pfrnn_fourth_training",
+        "model_path": "./models/harvey_pfrnn_third_training_3.pt",
+        "use_gpu": True
     }
 
     # sv_parameters = SVL1Paramters(
