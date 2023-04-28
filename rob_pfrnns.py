@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 
 class PFRNN(nn.Module):
-    def __init__(self, num_particles, input_size=1, hidden_size=1, ext_obs=1, resamp_alpha=0.1):
+    def __init__(self, num_particles, input_size=1, hidden_size=1, ext_obs=1, resamp_alpha=0.1, use_gpu=True):
         """
         :param num_particles: number of particles for a PF-RNN
         :param input_size: the size of input x_t
@@ -21,6 +21,7 @@ class PFRNN(nn.Module):
         self.resamp_alpha = resamp_alpha
         self.train_obs_model = True
         self.train_trans_model = True
+        self.use_gpu = use_gpu
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
         self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 100)
@@ -107,7 +108,7 @@ class PFRNN(nn.Module):
         batch_size = indices.size(0)
         indices = indices.transpose(1, 0).contiguous()
         offset = torch.arange(batch_size).type(torch.LongTensor).unsqueeze(0)
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and self.use_gpu:
             offset = offset.to('cuda')
         indices = offset + indices * batch_size
         flatten_indices = indices.view(-1, 1).squeeze()
@@ -134,7 +135,7 @@ class PFRNN(nn.Module):
         h0, p0 = hx
         batch_size = h0.size(0)
 
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and self.use_gpu:
             random_input = torch.cuda.FloatTensor(h0.shape).normal_()
         else:
             random_input = torch.FloatTensor(h0.shape).normal_()

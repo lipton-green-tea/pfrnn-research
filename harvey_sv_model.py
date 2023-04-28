@@ -16,9 +16,10 @@ class HarveySVPF(nn.Module):
         self.initialize = 'rand'
         self.model = 'PFLSTM'
         self.dropout_rate = 0.0  # TODO: revert this to have some dropout
+        self.use_gpu = model_args.get("use_gpu", True)
 
         self.rnn = PFRNN(self.num_particles, total_emb,
-                    self.hidden_dim, total_emb, resamp_alpha)
+                    self.hidden_dim, total_emb, resamp_alpha, use_gpu=self.use_gpu)
 
         self.hnn_dropout = nn.Dropout(self.dropout_rate)
 
@@ -41,7 +42,7 @@ class HarveySVPF(nn.Module):
             else:
                 return h.to('cuda')
 
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and self.use_gpu:
             hidden = cudify_hidden(hidden)
 
         return hidden
@@ -98,7 +99,7 @@ class HarveySVPF(nn.Module):
         sl = pred.size(0)
         bpdecay_params = np.exp(args.bpdecay * np.arange(sl))
         bpdecay_params = bpdecay_params / np.sum(bpdecay_params)
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and self.use_gpu:
             bpdecay_params = torch.FloatTensor(bpdecay_params).to('cuda')
         else:
             bpdecay_params = torch.FloatTensor(bpdecay_params)
