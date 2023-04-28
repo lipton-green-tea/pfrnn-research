@@ -277,7 +277,17 @@ if __name__=="__main__":
     # 1. a graph of the loss over epochs
     # 2. a graph showing the model fit to data
 
+    print("eval loss: ")
     print(loss_per_epoch)
+
+    print("training loss: ")
+    training_loss = [sum(iter_loss)/len(iter_loss) for iter_loss in training_loss]
+    print(training_loss)
+
+    # write the loss to a file
+    loss_file = open('loss.txt','w')
+    loss_file.write(str(loss_per_epoch)+"\n")
+    loss_file.write(str(training_loss)+"\n")
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
