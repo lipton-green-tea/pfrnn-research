@@ -108,7 +108,7 @@ class PFRNN(nn.Module):
         indices = indices.transpose(1, 0).contiguous()
         offset = torch.arange(batch_size).type(torch.LongTensor).unsqueeze(0)
         if torch.cuda.is_available():
-            offset = offset.cuda()
+            offset = offset.to('cuda')
         indices = offset + indices * batch_size
         flatten_indices = indices.view(-1, 1).squeeze()
 

@@ -39,7 +39,7 @@ class HarveySVPF(nn.Module):
             if isinstance(h, tuple):
                 return tuple([cudify_hidden(h_) for h_ in h])
             else:
-                return h.cuda()
+                return h.to('cuda')
 
         if torch.cuda.is_available():
             hidden = cudify_hidden(hidden)
@@ -99,7 +99,7 @@ class HarveySVPF(nn.Module):
         bpdecay_params = np.exp(args.bpdecay * np.arange(sl))
         bpdecay_params = bpdecay_params / np.sum(bpdecay_params)
         if torch.cuda.is_available():
-            bpdecay_params = torch.FloatTensor(bpdecay_params).cuda()
+            bpdecay_params = torch.FloatTensor(bpdecay_params).to('cuda')
         else:
             bpdecay_params = torch.FloatTensor(bpdecay_params)
 
