@@ -64,8 +64,9 @@ if __name__=="__main__":
 
     # initialize model args to default values 
     model_args = ModelArgs(
-        l1_weight=0.5,
-        l2_weight=0.5,
+        l1_weight=0,
+        l2_weight=1,
+        elbo_weight=0
     )
     model_config = {
         "num_particles": 128,
