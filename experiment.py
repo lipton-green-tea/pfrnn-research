@@ -32,11 +32,11 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 8000,
-        "sequence_length": 300,
+        "samples": 4000,
+        "sequence_length": 10,
         "window_size": 1,
         "train_test_split": 0.9,
-        "epochs": 5, # set to 0 if you don't want to train the model
+        "epochs": 3, # set to 0 if you don't want to train the model
         "batch_size": 40,
         "learning_rate": 0.0005,
         "load_model_from_previous": False,
@@ -64,9 +64,9 @@ if __name__=="__main__":
 
     # initialize model args to default values 
     model_args = ModelArgs(
-        l1_weight=0,
-        l2_weight=1,
-        elbo_weight=0
+        l1_weight=0.1,
+        l2_weight=0.9,
+        elbo_weight=0.3
     )
     model_config = {
         "num_particles": 128,
