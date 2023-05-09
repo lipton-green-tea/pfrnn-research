@@ -32,18 +32,18 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 4000,
-        "sequence_length": 10,
+        "samples": 5000,
+        "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,
-        "epochs": 3, # set to 0 if you don't want to train the model
+        "epochs": 5, # set to 0 if you don't want to train the model
         "batch_size": 40,
         "learning_rate": 0.0005,
-        "load_model_from_previous": False,
-        "load_data_from_previous": False,
+        "load_model_from_previous": True,
+        "load_data_from_previous": True,
         "save_models": True,
         "base_path": "./models/harvey_pfrnn_change_loss_func",
-        "model_path": "./models/pfrnn_epoch_1.pt",
+        "model_path": "./models/harvey_pfrnn_change_loss_func_1.pt",
         "use_gpu": True
     }
 
@@ -309,6 +309,9 @@ if __name__=="__main__":
         ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
         xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
         particle_pred_y = particle_pred.flatten()
+
+        print("mse error: ", end="")
+        print(sum([(ys_true[i] - ys_pred[i])**2 for i in range(len(ys_true))]) / len(ys_pred))
 
         # create particle pred y
         num_particles = particle_pred.shape[1]
