@@ -39,8 +39,8 @@ if __name__=="__main__":
         "epochs": 5, # set to 0 if you don't want to train the model
         "batch_size": 40,
         "learning_rate": 0.0005,
-        "load_model_from_previous": True,
-        "load_data_from_previous": True,
+        "load_model_from_previous": False,
+        "load_data_from_previous": False,
         "save_models": True,
         "base_path": "./models/harvey_pfrnn_change_loss_func",
         "model_path": "./models/harvey_pfrnn_change_loss_func_1.pt",
