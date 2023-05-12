@@ -66,7 +66,8 @@ if __name__=="__main__":
     model_args = ModelArgs(
         l1_weight=0.1,
         l2_weight=0.9,
-        elbo_weight=0.3
+        elbo_weight=1,
+        resamp_alpha=0.35
     )
     model_config = {
         "num_particles": 128,
@@ -237,14 +238,14 @@ if __name__=="__main__":
                 ys_batch = ys_batch.to('cuda')
 
             # perform 1 step of gradient descent
-            loss, log_loss, particle_pred = model.step(xs_batch,ys_batch,model_args)
+            loss, mean_mse_loss, particle_pred = model.step(xs_batch,ys_batch,model_args)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
             # print our loss and save it in a list
             estimated_time_remaining = int(((time.time() - start_time) / (i + 1)) * (iterations - i - 1))
-            print(f"[{i + 1}/{iterations}] training loss: {loss}   [{estimated_time_remaining}s remaining]")
+            print(f"[{i + 1}/{iterations}] training loss (loss func -- mean mse): {loss} --  {mean_mse_loss}  [{estimated_time_remaining}s remaining]")
             training_loss[e].append(loss.to('cpu').detach().item())
 
         # we now evaluate the model using our eval 
@@ -254,8 +255,9 @@ if __name__=="__main__":
             if torch.cuda.is_available() and config["use_gpu"]:
                 xs_test = xs_test.to('cuda')
                 ys_test = ys_test.to('cuda')
-            loss, log_loss, particle_pred = model.step(xs_test, ys_test, model_args)
+            loss, mean_mse_loss, particle_pred = model.step(xs_test, ys_test, model_args)
             print(f"eval loss: {loss}")
+            print(f"eval mean mse loss: {mean_mse_loss}")
             loss_per_epoch.append(loss.to('cpu').detach().item())
 
         # save the model in between epochs
