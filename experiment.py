@@ -35,7 +35,7 @@ if __name__=="__main__":
         "samples": 5000,
         "sequence_length": 300,
         "window_size": 1,
-        "train_test_split": 0.9,
+        "train_test_split": 0.9,    
         "epochs": 5, # set to 0 if you don't want to train the model
         "batch_size": 40,
         "learning_rate": 0.0005,
