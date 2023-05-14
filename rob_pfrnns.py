@@ -21,7 +21,7 @@ class PFRNN(nn.Module):
         self.resamp_alpha = resamp_alpha
         self.train_obs_model = True
         self.train_trans_model = True
-        self.load_from_pretrained = False
+        self.load_from_pretrained = True
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
         self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 100)

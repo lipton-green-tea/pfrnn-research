@@ -32,7 +32,7 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 10000,
+        "samples": 5000,
         "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,    
@@ -42,7 +42,7 @@ if __name__=="__main__":
         "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
-        "base_path": "./models/harvey_pfrnn_no_pretraining",
+        "base_path": "./models/harvey_pfrnn_change_params",
         "model_path": "./models/harvey_pfrnn_change_loss_func_1.pt",
         "use_gpu": True
     }
@@ -58,15 +58,15 @@ if __name__=="__main__":
 
     sv_parameters = HarveySVParamters(
         mu=2. * np.log(.7204), 
-        phi=.9807, 
-        tau=0.1489
+        phi=.8807, 
+        tau=0.1689
     )
 
     # initialize model args to default values 
     model_args = ModelArgs(
         l1_weight=0.1,
         l2_weight=0.9,
-        elbo_weight=1,
+        elbo_weight=0.5,
         resamp_alpha=0.35
     )
     model_config = {
