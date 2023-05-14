@@ -12,7 +12,7 @@ class HarveySVPF(nn.Module):
         self.output_dim = 1
         total_emb = 1
         self.hidden_dim = 1
-        resamp_alpha = 0.3
+        resamp_alpha = model_args.get("resample_alpha", 0.3)
         self.initialize = 'rand'
         self.model = 'PFLSTM'
         self.dropout_rate = 0.0  # TODO: revert this to have some dropout
@@ -108,7 +108,10 @@ class HarveySVPF(nn.Module):
         pred = pred.transpose(0, 1).contiguous()
 
         l2_pred_loss = torch.nn.functional.mse_loss(pred, true_vol, reduction='none') * bpdecay_params
+        likelihood_reweighting = torch.square(true_vol + 0.5) / torch.square(true_vol + 0.5).mean()
+        l2_pred_loss = l2_pred_loss * likelihood_reweighting
         l1_pred_loss = torch.nn.functional.l1_loss(pred, true_vol, reduction='none') * bpdecay_params
+        l1_pred_loss = l1_pred_loss * likelihood_reweighting
 
         # separate loss for position and bearing calculation so we can weight their 
         # contribution to the total loss separately
@@ -151,7 +154,7 @@ class HarveySVPF(nn.Module):
         belief_loss = args.l2_weight * l2_particle_loss + args.l1_weight * l1_particle_loss
         total_loss = total_loss + args.elbo_weight * belief_loss
 
-        loss_last = torch.nn.functional.mse_loss(pred[:, -1, :], true_vol[:, -1, :])
+        loss_last = torch.nn.functional.mse_loss(pred[:, -1, :].mean(dim=1), true_vol[:, -1, :].mean(dim=1))
 
         particle_pred = particle_pred.view(self.num_particles, batch_size, sl, self.output_dim)
 
