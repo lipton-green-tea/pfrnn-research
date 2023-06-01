@@ -42,7 +42,7 @@ if __name__=="__main__":
         "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
-        "base_path": "./models/harvey_pfrnn_change_params",
+        "base_path": "./models/harvey_pfrnn_gaussian_loss",
         "model_path": "./models/harvey_pfrnn_change_loss_func_1.pt",
         "use_gpu": True
     }
