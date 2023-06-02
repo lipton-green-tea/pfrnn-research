@@ -58,8 +58,8 @@ if __name__=="__main__":
 
     sv_parameters = HarveySVParamters(
         mu=2. * np.log(.7204), 
-        phi=.8807, 
-        tau=0.1689
+        phi=.9807, 
+        tau=0.1489
     )
 
     # initialize model args to default values 
