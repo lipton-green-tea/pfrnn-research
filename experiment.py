@@ -1,3 +1,4 @@
+import experiment_helpers
 from stochastic_volatility import SVL1, SVL1Paramters, HarveySV, HarveySVParamters
 from rob import SVMParamterEstimator, ModelArgs
 from harvey_sv_model import HarveySVPF
@@ -32,11 +33,11 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 5000,
+        "samples": 200,
         "sequence_length": 300,
         "window_size": 1,
-        "train_test_split": 0.9,    
-        "epochs": 7, # set to 0 if you don't want to train the model
+        "train_test_split": 0.5,    
+        "epochs": 0, # set to 0 if you don't want to train the model
         "batch_size": 50,
         "learning_rate": 0.0005,
         "load_model_from_previous": False,
@@ -291,6 +292,36 @@ if __name__=="__main__":
     loss_file = open('./saved_loss/loss.txt','w')
     loss_file.write(str(loss_per_epoch)+"\n")
     loss_file.write(str(training_loss)+"\n")
+    loss_file.close()
+
+    # now we will calculate our 5 main statistics over the entire batch of test data
+    if torch.cuda.is_available() and config["use_gpu"]:
+        xs_test = xs_test.to('cuda')
+    ys_pred, particle_pred = model.forward(xs_test)
+
+    print(xs_test.shape)
+    print(ys_pred.shape)
+    print(particle_pred.shape)
+    
+    test_results = {
+        "mse": np.zeros(len(xs_test)),
+        "mae": np.zeros(len(xs_test)),
+        "qlike": np.zeros(len(xs_test)),
+        "mde": np.zeros(len(xs_test)),
+        "log_likelihood": np.zeros(len(xs_test)),
+        "particle_log_likelihood": np.zeros(len(xs_test)),
+    }
+    for batch in range(0, len(xs_test)):
+        test_results["mse"][batch] = experiment_helpers.mse(xs_test, ys_pred)
+        test_results["mae"][batch] = experiment_helpers.mae(xs_test, ys_pred)
+        test_results["qlike"][batch] = experiment_helpers.qlike(xs_test, ys_pred)
+        test_results["mde"][batch] = experiment_helpers.mde(xs_test, ys_pred)
+        test_results["log_likelihood"][batch] = experiment_helpers.log_likelihood(xs_test, ys_pred, sv_parameters.tau)
+        test_results["particle_log_likelihood"][batch] = experiment_helpers.log_particle_likelihood(xs_test, particle_pred, sv_parameters.tau)
+
+    for k, v in test_results.items:
+        print(f"mean {k}: {v.mean()}")
+        print(f"std  {k}: {v.std()}")
 
     # we will now predict volatility for a single innovations series
     # and then plot the predictions against the actual volatility
