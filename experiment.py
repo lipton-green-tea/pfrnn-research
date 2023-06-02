@@ -36,8 +36,8 @@ if __name__=="__main__":
         "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,    
-        "epochs": 10, # set to 0 if you don't want to train the model
-        "batch_size": 100,
+        "epochs": 7, # set to 0 if you don't want to train the model
+        "batch_size": 50,
         "learning_rate": 0.0005,
         "load_model_from_previous": False,
         "load_data_from_previous": False,
