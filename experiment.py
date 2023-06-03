@@ -33,13 +33,13 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 5000,
+        "samples": 4000,
         "sequence_length": 300,
         "window_size": 1,
-        "train_test_split": 0.5,    
+        "train_test_split": 0.8,    
         "epochs": 6, # set to 0 if you don't want to train the model
         "batch_size": 50,
-        "learning_rate": 0.0005,
+        "learning_rate": 0.0008,
         "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
@@ -59,8 +59,8 @@ if __name__=="__main__":
 
     sv_parameters = HarveySVParamters(
         mu=2. * np.log(.7204), 
-        phi=.9807, 
-        tau=0.1489
+        phi=.9107, 
+        tau=0.1650
     )
 
     # initialize model args to default values 
