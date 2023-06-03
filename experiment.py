@@ -33,18 +33,18 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 200,
+        "samples": 5000,
         "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.5,    
-        "epochs": 0, # set to 0 if you don't want to train the model
+        "epochs": 6, # set to 0 if you don't want to train the model
         "batch_size": 50,
         "learning_rate": 0.0005,
         "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
-        "base_path": "./models/harvey_pfrnn_gaussian_loss",
-        "model_path": "./models/harvey_pfrnn_change_loss_func_1.pt",
+        "base_path": "./models/harvey_pfrnn_gaussian_loss_two",
+        "model_path": "./models/harvey_pfrnn_change_loss_func_4.pt",
         "use_gpu": True
     }
 
@@ -299,27 +299,31 @@ if __name__=="__main__":
         xs_test = xs_test.to('cuda')
     ys_pred, particle_pred = model.forward(xs_test)
 
-    print(xs_test.shape)
-    print(ys_pred.shape)
-    print(particle_pred.shape)
+    ys_pred = ys_pred.cpu().detach().numpy()
+    ys_true = ys_test.cpu().detach().numpy()
+    particle_pred = particle_pred.cpu().detach().numpy()
     
     test_results = {
-        "mse": np.zeros(len(xs_test)),
-        "mae": np.zeros(len(xs_test)),
-        "qlike": np.zeros(len(xs_test)),
-        "mde": np.zeros(len(xs_test)),
-        "log_likelihood": np.zeros(len(xs_test)),
-        "particle_log_likelihood": np.zeros(len(xs_test)),
-    }
-    for batch in range(0, len(xs_test)):
-        test_results["mse"][batch] = experiment_helpers.mse(xs_test, ys_pred)
-        test_results["mae"][batch] = experiment_helpers.mae(xs_test, ys_pred)
-        test_results["qlike"][batch] = experiment_helpers.qlike(xs_test, ys_pred)
-        test_results["mde"][batch] = experiment_helpers.mde(xs_test, ys_pred)
-        test_results["log_likelihood"][batch] = experiment_helpers.log_likelihood(xs_test, ys_pred, sv_parameters.tau)
-        test_results["particle_log_likelihood"][batch] = experiment_helpers.log_particle_likelihood(xs_test, particle_pred, sv_parameters.tau)
+        "mse": np.zeros(len(ys_test)),
+        "mae": np.zeros(len(ys_test)),
+        "qlike": np.zeros(len(ys_test)),
+        "mde": np.zeros(len(ys_test)),
+        "log_likelihood": np.zeros(len(ys_test)),
+        "particle_log_likelihood": np.zeros(len(ys_test)),
+    } 
+    for batch in range(0, len(ys_test)):
+        real = np.squeeze(ys_true[batch])
+        pred = np.squeeze(ys_pred[:,batch])
+        # we need to reshape the particles into a useable shape
+        reshaped_particles = particle_pred.reshape((config["sequence_length"],len(ys_true),model_config["num_particles"])).transpose((1,0,2))[batch]
+        test_results["mse"][batch] = experiment_helpers.mse(real, pred)
+        test_results["mae"][batch] = experiment_helpers.mae(real, pred)
+        test_results["qlike"][batch] = experiment_helpers.qlike(real, pred)
+        test_results["mde"][batch] = experiment_helpers.mde(real, pred)
+        test_results["log_likelihood"][batch] = experiment_helpers.log_likelihood(real, pred, sv_parameters.tau)
+        #test_results["particle_log_likelihood"][batch] = experiment_helpers.log_particle_likelihood(ys_test[batch], reshaped_particles, sv_parameters.tau)
 
-    for k, v in test_results.items:
+    for k, v in test_results.items():
         print(f"mean {k}: {v.mean()}")
         print(f"std  {k}: {v.std()}")
 

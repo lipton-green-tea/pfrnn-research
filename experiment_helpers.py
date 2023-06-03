@@ -12,7 +12,7 @@ def mae(real, pred):
 
 
 def qlike(real, pred):
-    return (np.log(pred**2) + np.square(real) * np.square(pred)).mean()
+    return (np.log(np.square(pred)) + (np.square(real) * np.square(pred))).mean()
 
 
 def mde(real, pred):
