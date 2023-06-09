@@ -1,5 +1,5 @@
 import evaluation_helpers
-from stochastic_volatility import SVL1, SVL1Paramters, HarveySV, HarveySVParamters
+from stochastic_volatility import HarveySV, HarveySVParamters
 #from rob import SVMParamterEstimator, ModelArgs
 from model_args import ModelArgs
 from visualisation import InteractivePlot
@@ -7,12 +7,12 @@ from harvey_sv_model import HarveySVPF
 from lstm_model import LSTM1
 
 import os
+import sys
 import math
 import torch
 import time
+import json
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
 
 
 if __name__=="__main__":
@@ -32,58 +32,33 @@ if __name__=="__main__":
 
     def normalize(xs):
         return (xs - np.min(xs)) / (np.max(xs) - np.min(xs))
+    
 
-    # training config
-    config = {
-        "samples": 200,
-        "sequence_length": 300,
-        "window_size": 1,
-        "train_test_split": 0.5,    
-        "epochs": 0, # set to 0 if you don't want to train the model
-        "batch_size": 50,
-        "learning_rate": 0.0008,
-        "load_model_from_previous": False,
-        "load_data_from_previous": True,
-        "save_models": True,
-        "base_path": "./models/harvey_pfrnn_gaussian_loss_two",
-        "model_path": "./models/harvey_pfrnn_gaussian_loss_two_5.pt",
-        "use_gpu": True
-    }
+    # first lets load our config
+    # we check if the user has entered a desired config, otherwise we use the eval config
 
-    # sv_parameters = SVL1Paramters(
-    #     alpha=-0.00192640,
-    #     phi=0.972,
-    #     rho=-0.3179,
-    #     sigma=0.1495,
-    #     initial_innovation=0.5,
-    #     initial_volatility=0.5
-    # )
+    if len(sys.argv) > 1:
+        fp = sys.argv[1]
+    else:
+        fp = "./configs/eval.json"
+    with open(fp, "r") as config_file:
+        config = json.load(config_file)
 
-
+    
     sv_parameters = HarveySVParamters(
-        mu=2. * np.log(.7204), 
-        phi=.9807, 
-        tau=0.1489
+        mu=config["sv_config"]["mu"], 
+        phi=config["sv_config"]["phi"], 
+        tau=config["sv_config"]["tau"]
     )
 
-    # sv_parameters = HarveySVParamters(
-    #     mu=2. * np.log(.7204), 
-    #     phi=.9107, 
-    #     tau=0.1650
-    # )
-
-    # initialize model args to default values 
+    # lets init our model arguments
+    model_config = config["model_config"]
     model_args = ModelArgs(
-        l1_weight=0.1,
-        l2_weight=0.9,
-        elbo_weight=0.5,
-        resamp_alpha=0.35
+        l1_weight=model_config["l1_weight"],
+        l2_weight=model_config["l2_weight"],
+        elbo_weight=model_config["elbo_weight"],
+        resamp_alpha=model_config["resamp_alpha"]
     )
-    model_config = {
-        "num_particles": 128,
-        "input_size": config["window_size"],
-        "hidden_dimension": 1
-    }
 
     # here we either load or generate our dataset
     if config["load_data_from_previous"] and \
@@ -344,13 +319,7 @@ if __name__=="__main__":
 
 
     # create an interactive plot that allows us to explore how our model fits to data
-    plot_config = {
-        "use_gpu": True,
-        "plot_innovations": False,
-        "plot_particles": True,
-        "const_min_lim": -3,
-        "const_max_lim": 3
-    }
+    plot_config = config["plot_config"]
     iplot = InteractivePlot(model, xs_test, ys_test, config=plot_config)
     iplot.init_plot()
 

@@ -64,7 +64,6 @@ class InteractivePlot():
         particle_pred = particle_pred.cpu().detach().numpy()
 
         # flatten into a 1D array
-        print(ys_pred.shape)
         ys_pred = ys_pred.reshape((len(ys_pred), ))
         ys_true = ys_true[-series_num].reshape((len(self.ys[-series_num], )))
         xs_true = self.xs[-series_num, :,-1].reshape((len(self.xs[-series_num]), ))
