@@ -183,8 +183,6 @@ if __name__=="__main__":
     # we also create an optimizer
 
     model = HarveySVPF(model_config)
-    #model = SVMParamterEstimator(model_config)
-    #model = LSTM1(1, config["window_size"], 150, 1)
     if torch.cuda.is_available() and config["use_gpu"]:
         model.to('cuda')
     optimizer = torch.optim.AdamW(
@@ -276,26 +274,18 @@ if __name__=="__main__":
         
         print(f"epoch {e} took {time.time() - start_time} seconds")
 
+
+    # lets print out our final stats
+    print(f"eval loss: {loss_per_epoch}")
+    training_loss = [sum(iter_loss)/len(iter_loss) for iter_loss in training_loss]
+    print(f"training loss: {training_loss}")
+
     
-    # step 4: save the model
+    # step 4: save the model and loss stats
     #
     # we save the model using pytorch functions
-    torch.save(model.state_dict(), "./models/pfrnn.pt")
-
-    
-    # step 5: draw the graphs
-    # 
-    # we want to display our results now
-    # we draw a number of graphs to show these including
-    # 1. a graph of the loss over epochs
-    # 2. a graph showing the model fit to data
-
-    print("eval loss: ")
-    print(loss_per_epoch)
-
-    print("training loss: ")
-    training_loss = [sum(iter_loss)/len(iter_loss) for iter_loss in training_loss]
-    print(training_loss)
+    if config["epochs"] > 0:
+        torch.save(model.state_dict(), f"{config['base_path']}_final")
 
     # write the loss to a file
     loss_file = open('./saved_loss/loss.txt','w')
@@ -303,7 +293,9 @@ if __name__=="__main__":
     loss_file.write(str(training_loss)+"\n")
     loss_file.close()
 
-    # now we will calculate our 5 main statistics over the entire batch of test data
+
+    # step 5: calculate our metrics/statistics
+    # we calculate our 5 main statistics over the entire batch of test data
     if torch.cuda.is_available() and config["use_gpu"]:
         xs_test = xs_test.to('cuda')
     ys_pred, particle_pred = model.forward(xs_test)
@@ -320,64 +312,27 @@ if __name__=="__main__":
         "log_likelihood": np.zeros(len(ys_test)),
         "particle_log_likelihood": np.zeros(len(ys_test)),
     } 
-    for batch in range(0, len(ys_test)):
-        real = np.squeeze(ys_true[batch])
-        pred = np.squeeze(ys_pred[:,batch])
-        # we need to reshape the particles into a useable shape
-        reshaped_particles = particle_pred.reshape((config["sequence_length"],len(ys_true),model_config["num_particles"])).transpose((1,0,2))[batch]
-        test_results["mse"][batch] = evaluation_helpers.mse(real, pred)
-        test_results["mae"][batch] = evaluation_helpers.mae(real, pred)
-        test_results["qlike"][batch] = evaluation_helpers.qlike(real, pred)
-        test_results["mde"][batch] = evaluation_helpers.mde(real, pred)
-        test_results["log_likelihood"][batch] = evaluation_helpers.log_likelihood(real, pred, sv_parameters.tau)
-        #test_results["particle_log_likelihood"][batch] = experiment_helpers.log_particle_likelihood(ys_test[batch], reshaped_particles, sv_parameters.tau)
+    real = np.squeeze(ys_true)
+    pred = np.squeeze(ys_pred.transpose((1,0,2)))
+    # we need to reshape the particles into a useable shape
+    reshaped_particles = particle_pred.reshape((config["sequence_length"],len(ys_true),model_config["num_particles"])).transpose((1,0,2))
+    test_results["mse"] = evaluation_helpers.mse(real, pred)
+    test_results["mae"] = evaluation_helpers.mae(real, pred)
+    test_results["qlike"] = evaluation_helpers.qlike(real, pred)
+    test_results["mde"] = evaluation_helpers.mde(real, pred)
+    test_results["log_likelihood"] = evaluation_helpers.log_likelihood(real, pred, sv_parameters.tau)
 
     for k, v in test_results.items():
         print(f"mean {k}: {v.mean()}")
         print(f"std  {k}: {v.std()}")
 
-    # we will now predict volatility for a single innovations series
-    # and then plot the predictions against the actual volatility
-    def create_plot_data(series_num):
-
-        single_series = xs_test[-series_num:(-series_num)+1]
-        if torch.cuda.is_available() and config["use_gpu"]:
-                    single_series = single_series.to('cuda')
-        ys_pred, particle_pred = model.forward(single_series)
-
-        # convert to numpy arrays
-        ys_pred = ys_pred.cpu().detach().numpy()
-        ys_true = ys_test.cpu().detach().numpy()
-        particle_pred = particle_pred.cpu().detach().numpy()
-
-        # flatten into a 1D array
-        ys_pred = ys_pred.reshape((len(ys_pred), ))
-        ys_true = ys_true[-series_num].reshape((len(ys_test[-series_num], )))
-        xs_true = xs_test[-series_num, :,-1].reshape((len(xs_test[-series_num]), ))
-        particle_pred_y = particle_pred.flatten()
-
-        print("mse error: ", end="")
-        print(sum([(ys_true[i] - ys_pred[i])**2 for i in range(len(ys_true))]) / len(ys_pred))
-
-        # create particle pred y
-        num_particles = particle_pred.shape[1]
-        sequence_length = particle_pred.shape[0]
-        particle_pred_x = np.zeros(num_particles * sequence_length)
-        for xi in range(0, sequence_length):
-            for pi in range(0, num_particles):
-                particle_pred_x[xi * num_particles + pi] = xi
-
-        return ys_pred, ys_true, xs_true, particle_pred_x, particle_pred_y
-
-
-    # plot our predicted volatility, real volatility and innovations
-    # ys_pred, ys_true, xs_true = create_plot_data(7)
-    # example_plot = plt.figure(1)
-    # plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.2)
-    # plt.plot(ys_pred, color="orange", label="pred")
-    # plt.plot(ys_true, color="blue", label="true")
-    # example_plot.legend(loc="upper left")
-    # example_plot.show()
+    
+    # step 5: draw the graphs
+    # 
+    # we want to display our results now
+    # we draw a number of graphs to show these including
+    # 1. a graph of the loss over epochs
+    # 2. a graph showing the model fit to data
 
     # # below we plot our loss graphs
     # loss_plot = plt.figure(2)
@@ -385,10 +340,10 @@ if __name__=="__main__":
     # # calculate mean training loss per epoch (i.e. mean across iterations)
     # training_loss = [sum(l)/len(l) for l in training_loss]
     # plt.plot(training_loss)
-    # loss_plot.show()
+    # loss_plot.show() 
 
-    # create a plot that allows us to click through different plots
 
+    # create an interactive plot that allows us to explore how our model fits to data
     plot_config = {
         "use_gpu": True,
         "plot_innovations": False,
