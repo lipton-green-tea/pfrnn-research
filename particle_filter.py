@@ -20,8 +20,14 @@ class ParticleFilter():
         self.transformation_func = transformation_func
         self.observation_probability = observation_probability
         self.num_particles = num_particles
-        self.particles = particle_initializer(num_particles)
+        self.particle_initializer = particle_initializer
+        self.particles = self.particle_initializer(num_particles)
         self.weights = [(1/num_particles)] * num_particles
+
+    
+    def reset(self):
+        self.particles = self.particle_initializer(self.num_particles)
+        self.weights = [(1/self.num_particles)] * self.num_particles
 
 
     def step(self, observation, control):

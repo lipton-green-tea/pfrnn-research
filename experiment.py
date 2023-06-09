@@ -33,18 +33,18 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 4000,
+        "samples": 200,
         "sequence_length": 300,
         "window_size": 1,
-        "train_test_split": 0.8,    
-        "epochs": 6, # set to 0 if you don't want to train the model
+        "train_test_split": 0.5,    
+        "epochs": 0, # set to 0 if you don't want to train the model
         "batch_size": 50,
         "learning_rate": 0.0008,
         "load_model_from_previous": False,
-        "load_data_from_previous": False,
+        "load_data_from_previous": True,
         "save_models": True,
         "base_path": "./models/harvey_pfrnn_gaussian_loss_two",
-        "model_path": "./models/harvey_pfrnn_change_loss_func_4.pt",
+        "model_path": "./models/harvey_pfrnn_gaussian_loss_two_5.pt",
         "use_gpu": True
     }
 
@@ -57,11 +57,18 @@ if __name__=="__main__":
     #     initial_volatility=0.5
     # )
 
+
     sv_parameters = HarveySVParamters(
         mu=2. * np.log(.7204), 
-        phi=.9107, 
-        tau=0.1650
+        phi=.9807, 
+        tau=0.1489
     )
+
+    # sv_parameters = HarveySVParamters(
+    #     mu=2. * np.log(.7204), 
+    #     phi=.9107, 
+    #     tau=0.1650
+    # )
 
     # initialize model args to default values 
     model_args = ModelArgs(

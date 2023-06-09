@@ -108,7 +108,7 @@ class HarveySVPF(nn.Module):
         pred = pred.transpose(0, 1).contiguous()
 
         l2_pred_loss = torch.nn.functional.mse_loss(pred, true_vol, reduction='none') * bpdecay_params
-        likelihood_reweighting = torch.exp(torch.square(pred + 0.654) / (2 * 0.395 ** 2))
+        likelihood_reweighting = torch.exp(torch.square(-(pred + 0.654)) / (2 * 0.395 ** 2))
         likelihood_reweighting = likelihood_reweighting / likelihood_reweighting.mean()
         l2_pred_loss = l2_pred_loss * likelihood_reweighting
         l1_pred_loss = torch.nn.functional.l1_loss(pred, true_vol, reduction='none') * bpdecay_params
