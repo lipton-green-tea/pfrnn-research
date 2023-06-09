@@ -1,6 +1,8 @@
-import experiment_helpers
+import evaluation_helpers
 from stochastic_volatility import SVL1, SVL1Paramters, HarveySV, HarveySVParamters
-from rob import SVMParamterEstimator, ModelArgs
+#from rob import SVMParamterEstimator, ModelArgs
+from model_args import ModelArgs
+from visualisation import InteractivePlot
 from harvey_sv_model import HarveySVPF
 from lstm_model import LSTM1
 
@@ -85,15 +87,15 @@ if __name__=="__main__":
 
     # here we either load or generate our dataset
     if config["load_data_from_previous"] and \
-       os.path.isfile("xs_train.pt"):  # if the xs_train tensor file exists assume the others do too
+       os.path.isfile("./simulated_data/xs_train.pt"):  # if the xs_train tensor file exists assume the others do too
         # we load our tensors from their files
-        with open("xs_train.pt", 'rb') as f:
+        with open("./simulated_data/xs_train.pt", 'rb') as f:
             xs_train = torch.load(f)
-        with open("ys_train.pt", 'rb') as f:
+        with open("./simulated_data/ys_train.pt", 'rb') as f:
             ys_train = torch.load(f)
-        with open("xs_test.pt", 'rb') as f:
+        with open("./simulated_data/xs_test.pt", 'rb') as f:
             xs_test = torch.load(f)
-        with open("ys_test.pt", 'rb') as f:
+        with open("./simulated_data/ys_test.pt", 'rb') as f:
             ys_test = torch.load(f)
     else:  # generate volatility data using the SVL1 model
         start_time = time.time()
@@ -161,13 +163,13 @@ if __name__=="__main__":
 
         # save all the tensors so they can be loaded instead
         # of generated next time
-        with open("xs_train.pt", 'wb') as f:
+        with open("./simulated_data/xs_train.pt", 'wb') as f:
             torch.save(xs_train, f)
-        with open("ys_train.pt", 'wb') as f:
+        with open("./simulated_data/ys_train.pt", 'wb') as f:
             torch.save(ys_train, f)
-        with open("xs_test.pt", 'wb') as f:
+        with open("./simulated_data/xs_test.pt", 'wb') as f:
             torch.save(xs_test, f)
-        with open("ys_test.pt", 'wb') as f:
+        with open("./simulated_data/ys_test.pt", 'wb') as f:
             torch.save(ys_test, f)
 
     print(xs_train.shape)
@@ -323,11 +325,11 @@ if __name__=="__main__":
         pred = np.squeeze(ys_pred[:,batch])
         # we need to reshape the particles into a useable shape
         reshaped_particles = particle_pred.reshape((config["sequence_length"],len(ys_true),model_config["num_particles"])).transpose((1,0,2))[batch]
-        test_results["mse"][batch] = experiment_helpers.mse(real, pred)
-        test_results["mae"][batch] = experiment_helpers.mae(real, pred)
-        test_results["qlike"][batch] = experiment_helpers.qlike(real, pred)
-        test_results["mde"][batch] = experiment_helpers.mde(real, pred)
-        test_results["log_likelihood"][batch] = experiment_helpers.log_likelihood(real, pred, sv_parameters.tau)
+        test_results["mse"][batch] = evaluation_helpers.mse(real, pred)
+        test_results["mae"][batch] = evaluation_helpers.mae(real, pred)
+        test_results["qlike"][batch] = evaluation_helpers.qlike(real, pred)
+        test_results["mde"][batch] = evaluation_helpers.mde(real, pred)
+        test_results["log_likelihood"][batch] = evaluation_helpers.log_likelihood(real, pred, sv_parameters.tau)
         #test_results["particle_log_likelihood"][batch] = experiment_helpers.log_particle_likelihood(ys_test[batch], reshaped_particles, sv_parameters.tau)
 
     for k, v in test_results.items():
@@ -387,74 +389,15 @@ if __name__=="__main__":
 
     # create a plot that allows us to click through different plots
 
-    plot_innovation = False
-    plot_particles = True
-    const_min_lim = -3
-    const_max_lim = 3
-
-    fig, ax = plt.subplots()
-    plt.subplots_adjust(bottom=0.2)
-    ys_pred, ys_true, xs_true, particle_x, particle_y = create_plot_data(7)
-
-    ys_pred_line, = plt.plot(ys_pred, color="orange", label="pred")
-    ys_true_line, = plt.plot(ys_true, color="blue", label="true")
-    if plot_innovation:
-        xs_true_line, = plt.plot(xs_true, color="pink",  label="innovation", linewidth=0.3)
-    if plot_particles:
-        particle_plot = plt.scatter(particle_x, particle_y, color="lightskyblue", label="particles", s=0.04)
-    plt.legend(loc="upper left")
-
-    class Index(object):
-        ind = 7
-        def next(self, event):
-            self.ind += 1 
-            self.update()
-
-        def prev(self, event):
-            self.ind -= 1 
-            self.update()
-
-        def update(self):
-            i  = self.ind %(len(xs_test))
-            ys_pred,ys_true,xs_true,particle_x, particle_y = create_plot_data(i) #unpack tuple data
-            y_data = list(range(len(ys_pred)))
-            ys_pred_line.set_ydata(ys_pred)
-            ys_pred_line.set_xdata(y_data)
-            ys_true_line.set_ydata(ys_true)
-            ys_true_line.set_xdata(y_data)
-            if plot_innovation:
-                xs_true_line.set_ydata(xs_true)
-                xs_true_line.set_xdata(y_data)
-            if plot_particles:
-                particle_plot.set_offsets(np.column_stack((particle_x, particle_y)))
-            
-            y_min = min(min(ys_pred), min(ys_true))
-            y_max = max(max(ys_pred), max(ys_true))
-            if plot_innovation:
-                y_min = min(y_min, min(xs_true))
-                y_max = max(y_max, max(xs_true))
-            if plot_particles:
-                y_min = min(y_min, min(particle_y))
-                y_max = max(y_max, max(particle_y))
-            if const_min_lim:
-                y_min = const_min_lim
-            if const_max_lim:
-                y_max = const_max_lim
-            ax.set_ylim(
-                y_min, 
-                y_max
-            )
-            plt.draw()
-        
-    callback = Index()
-    axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
-    axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
-    bnext = Button(axnext, 'Next')
-    bnext.on_clicked(callback.next)
-    bprev = Button(axprev, 'Previous')
-    bprev.on_clicked(callback.prev)
-
-    plt.show()
+    plot_config = {
+        "use_gpu": True,
+        "plot_innovations": False,
+        "plot_particles": True,
+        "const_min_lim": -3,
+        "const_max_lim": 3
+    }
+    iplot = InteractivePlot(model, xs_test, ys_test, config=plot_config)
+    iplot.init_plot()
 
     input()
     
