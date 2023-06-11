@@ -1,6 +1,7 @@
 from stochastic_volatility import SVL1, SVL1Paramters, HarveySV, HarveySVParamters
 from rob import SVMParamterEstimator, ModelArgs
 from harvey_sv_model import HarveySVPF
+from small_pfrnn_model import SmallPFRNNModel
 from lstm_model import LSTM1
 
 import os
@@ -32,18 +33,18 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 1000,
+        "samples": 500,
         "sequence_length": 300,
         "window_size": 1,
         "train_test_split": 0.9,
-        "epochs": 2, # set to 0 if you don't want to train the model
-        "batch_size": 10,
+        "epochs": 3, # set to 0 if you don't want to train the model
+        "batch_size": 25,
         "learning_rate": 0.0005,
-        "load_model_from_previous": True,
+        "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
-        "base_path": "./models/harvey_pfrnn_second_training",
-        "model_path": "./models/pfrnn_epoch_1.pt",
+        "base_path": "./models/small_pfrnn",
+        "model_path": "./models/small_pfrnn_0.pt",
         "use_gpu": False
     }
 
@@ -170,7 +171,7 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
-    model = HarveySVPF(model_config)
+    model = SmallPFRNNModel(model_config)  
     #model = SVMParamterEstimator(model_config)
     #model = LSTM1(1, config["window_size"], 150, 1)
     if torch.cuda.is_available() and config["use_gpu"]:
