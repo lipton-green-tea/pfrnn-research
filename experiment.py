@@ -37,13 +37,13 @@ if __name__=="__main__":
 
     # training config
     config = {
-        "samples": 500,
+        "samples": 2500,
         "sequence_length": 300,
         "window_size": 1,
-        "train_test_split": 0.9,
-        "epochs": 3, # set to 0 if you don't want to train the model
+        "train_test_split": 0.8,
+        "epochs": 10, # set to 0 if you don't want to train the model
         "batch_size": 25,
-        "learning_rate": 0.0005,
+        "learning_rate": 0.005,
         "load_model_from_previous": False,
         "load_data_from_previous": False,
         "save_models": True,
@@ -57,7 +57,7 @@ if __name__=="__main__":
     if len(sys.argv) > 1:
         fp = sys.argv[1]
     else:
-        fp = "./configs/eval.json"
+        fp = "./configs/train_small_pfrnn.json"
     with open(fp, "r") as config_file:
         config = json.load(config_file)
 

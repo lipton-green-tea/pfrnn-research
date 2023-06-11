@@ -175,12 +175,15 @@ class SmallPFRNN(nn.Module):
         self.train_trans_model = True
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
-        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 20)
-        self.fc_obs_l2 = nn.Linear(20, 1)
+        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 50)
+        self.fc_obs_l2 = nn.Linear(50, 30)
+        self.fc_obs_l3 = nn.Linear(30, 1)
         self.fc_obs = nn.Sequential(
             self.fc_obs_l1,
             nn.Sigmoid(),
             self.fc_obs_l2,
+            nn.Sigmoid(),
+            self.fc_obs_l3,
             nn.Sigmoid(),
         )
 
@@ -190,12 +193,15 @@ class SmallPFRNN(nn.Module):
         # this will take as input a hidden state (volatility) and normaly dist. random float
         # TODO: let it take parameter values as input
 
-        self.fc_trans_l1 = nn.Linear(self.h_dim, 20)
-        self.fc_trans_l2 = nn.Linear(20, 1)
+        self.fc_trans_l1 = nn.Linear(self.h_dim, 40)
+        self.fc_trans_l2 = nn.Linear(40, 30)
+        self.fc_trans_l3 = nn.Linear(30, 1)
         self.fc_trans = nn.Sequential(
             self.fc_trans_l1,
             nn.Sigmoid(),
             self.fc_trans_l2,
+            nn.Sigmoid(),
+            self.fc_trans_l3,
         )
 
         # here we define a simple layer to determine the variance to use for reparameterization
