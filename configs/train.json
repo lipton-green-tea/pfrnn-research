@@ -1,0 +1,36 @@
+{
+    "samples": 2500,
+    "sequence_length": 300,
+    "window_size": 1,
+    "train_test_split": 0.8,    
+    "epochs": 10,
+    "batch_size": 50,
+    "learning_rate": 0.0005,
+    "load_model_from_previous": false,
+    "load_data_from_previous": false,
+    "save_models": true,
+    "base_path": "./models/new_training",
+    "model_path": "./models/pfrnn_epoch_1.pt",
+    "use_gpu": true,
+    "sv_config": {
+        "mu": -0.655897331360672,
+        "phi":0.9807,
+        "tau":0.1489
+    },
+    "model_config": {
+        "num_particles": 128,
+        "input_size": 1,
+        "hidden_dimension": 1,
+        "l1_weight": 0.1,
+        "l2_weight": 0.9,
+        "elbo_weight": 0.5,
+        "resamp_alpha": 0.35
+    },
+    "plot_config": {
+        "use_gpu": true,
+        "plot_innovations": false,
+        "plot_particles": true,
+        "const_min_lim": -3,
+        "const_max_lim": 3
+    }
+}

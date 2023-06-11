@@ -21,6 +21,7 @@ class PFRNN(nn.Module):
         self.resamp_alpha = resamp_alpha
         self.train_obs_model = True
         self.train_trans_model = True
+        self.load_from_pretrained = True
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
         self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 100)
@@ -28,18 +29,19 @@ class PFRNN(nn.Module):
         self.fc_obs_l3 = nn.Linear(100, 1)
 
         # init weights to approximate a normal pdf
-        fc_obs_l1_weights = np.transpose(np.load("./models/layer_0_weights.npy"))
-        fc_obs_l1_biases = np.transpose(np.load("./models/layer_0_biases.npy"))
-        fc_obs_l2_weights = np.transpose(np.load("./models/layer_1_weights.npy"))
-        fc_obs_l2_biases = np.transpose(np.load("./models/layer_1_biases.npy"))
-        fc_obs_l3_weights = np.transpose(np.load("./models/layer_2_weights.npy"))
-        fc_obs_l3_biases = np.transpose(np.load("./models/layer_2_biases.npy"))
-        self.fc_obs_l1.weight.data = torch.from_numpy(fc_obs_l1_weights)
-        self.fc_obs_l1.bias.data = torch.from_numpy(fc_obs_l1_biases)
-        self.fc_obs_l2.weight.data = torch.from_numpy(fc_obs_l2_weights)
-        self.fc_obs_l2.bias.data = torch.from_numpy(fc_obs_l2_biases)
-        self.fc_obs_l3.weight.data = torch.from_numpy(fc_obs_l3_weights)
-        self.fc_obs_l3.bias.data = torch.from_numpy(fc_obs_l3_biases)
+        if self.load_from_pretrained:
+            fc_obs_l1_weights = np.transpose(np.load("./models/layer_0_weights.npy"))
+            fc_obs_l1_biases = np.transpose(np.load("./models/layer_0_biases.npy"))
+            fc_obs_l2_weights = np.transpose(np.load("./models/layer_1_weights.npy"))
+            fc_obs_l2_biases = np.transpose(np.load("./models/layer_1_biases.npy"))
+            fc_obs_l3_weights = np.transpose(np.load("./models/layer_2_weights.npy"))
+            fc_obs_l3_biases = np.transpose(np.load("./models/layer_2_biases.npy"))
+            self.fc_obs_l1.weight.data = torch.from_numpy(fc_obs_l1_weights)
+            self.fc_obs_l1.bias.data = torch.from_numpy(fc_obs_l1_biases)
+            self.fc_obs_l2.weight.data = torch.from_numpy(fc_obs_l2_weights)
+            self.fc_obs_l2.bias.data = torch.from_numpy(fc_obs_l2_biases)
+            self.fc_obs_l3.weight.data = torch.from_numpy(fc_obs_l3_weights)
+            self.fc_obs_l3.bias.data = torch.from_numpy(fc_obs_l3_biases)
         self.fc_obs_l1.weight.requires_grad = self.train_obs_model
         self.fc_obs_l1.bias.requires_grad = self.train_obs_model
         self.fc_obs_l2.weight.requires_grad = self.train_obs_model
@@ -65,18 +67,19 @@ class PFRNN(nn.Module):
         self.fc_trans_l2 = nn.Linear(100, 100)
         self.fc_trans_l3 = nn.Linear(100, 1)
 
-        fc_trans_l1_weights = np.transpose(np.load("./models/trans_layer_0_weights.npy"))
-        fc_trans_l1_biases = np.transpose(np.load("./models/trans_layer_0_biases.npy"))
-        fc_trans_l2_weights = np.transpose(np.load("./models/trans_layer_1_weights.npy"))
-        fc_trans_l2_biases = np.transpose(np.load("./models/trans_layer_1_biases.npy"))
-        fc_trans_l3_weights = np.transpose(np.load("./models/trans_layer_2_weights.npy"))
-        fc_trans_l3_biases = np.transpose(np.load("./models/trans_layer_2_biases.npy"))
-        self.fc_trans_l1.weight.data = torch.from_numpy(fc_trans_l1_weights)
-        self.fc_trans_l1.bias.data = torch.from_numpy(fc_trans_l1_biases)
-        self.fc_trans_l2.weight.data = torch.from_numpy(fc_trans_l2_weights)
-        self.fc_trans_l2.bias.data = torch.from_numpy(fc_trans_l2_biases)
-        self.fc_trans_l3.weight.data = torch.from_numpy(fc_trans_l3_weights)
-        self.fc_trans_l3.bias.data = torch.from_numpy(fc_trans_l3_biases)
+        if self.load_from_pretrained:
+            fc_trans_l1_weights = np.transpose(np.load("./models/trans_layer_0_weights.npy"))
+            fc_trans_l1_biases = np.transpose(np.load("./models/trans_layer_0_biases.npy"))
+            fc_trans_l2_weights = np.transpose(np.load("./models/trans_layer_1_weights.npy"))
+            fc_trans_l2_biases = np.transpose(np.load("./models/trans_layer_1_biases.npy"))
+            fc_trans_l3_weights = np.transpose(np.load("./models/trans_layer_2_weights.npy"))
+            fc_trans_l3_biases = np.transpose(np.load("./models/trans_layer_2_biases.npy"))
+            self.fc_trans_l1.weight.data = torch.from_numpy(fc_trans_l1_weights)
+            self.fc_trans_l1.bias.data = torch.from_numpy(fc_trans_l1_biases)
+            self.fc_trans_l2.weight.data = torch.from_numpy(fc_trans_l2_weights)
+            self.fc_trans_l2.bias.data = torch.from_numpy(fc_trans_l2_biases)
+            self.fc_trans_l3.weight.data = torch.from_numpy(fc_trans_l3_weights)
+            self.fc_trans_l3.bias.data = torch.from_numpy(fc_trans_l3_biases)
         self.fc_obs_l1.weight.requires_grad = self.train_trans_model
         self.fc_obs_l1.bias.requires_grad = self.train_trans_model
         self.fc_obs_l2.weight.requires_grad = self.train_trans_model
