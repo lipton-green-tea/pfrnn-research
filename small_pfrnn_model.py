@@ -105,6 +105,7 @@ class SmallPFRNNModel(nn.Module):
 
         bpdecay_params = bpdecay_params.unsqueeze(0)
         bpdecay_params = bpdecay_params.unsqueeze(2)
+
         pred = pred.transpose(0, 1).contiguous()
 
         l2_pred_loss = torch.nn.functional.mse_loss(pred, true_vol, reduction='none') * bpdecay_params

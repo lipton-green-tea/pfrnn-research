@@ -1,16 +1,16 @@
 {
-    "samples": 500,
-    "sequence_length": 300,
+    "samples": 100,
+    "sequence_length": 50,
     "window_size": 1,
     "train_test_split": 0.0,    
     "epochs": 0,
     "batch_size": 50,
     "learning_rate": 0.0008,
     "load_model_from_previous": true,
-    "load_data_from_previous": false,
+    "load_data_from_previous": true,
     "save_models": false,
     "base_path": "./models/pfrnn_epoch",
-    "model_path": "./models/pfrnn_epoch_1.pt",
+    "model_path": "./models/small_pfrnn_15.pt",
     "use_gpu": true,
     "sv_config": {
         "mu": -0.655897331360672,
@@ -30,7 +30,7 @@
         "use_gpu": true,
         "plot_innovations": false,
         "plot_particles": true,
-        "const_min_lim": -3,
-        "const_max_lim": 3
+        "const_min_lim": null,
+        "const_max_lim": null
     }
 }

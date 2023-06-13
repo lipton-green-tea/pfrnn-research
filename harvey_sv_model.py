@@ -153,7 +153,7 @@ class HarveySVPF(nn.Module):
         l1_particle_loss = torch.mean(l1_particle_loss)
 
         belief_loss = args.l2_weight * l2_particle_loss + args.l1_weight * l1_particle_loss
-        total_loss = total_loss + args.elbo_weight * belief_loss
+        total_loss = (1 - args.elbo_weight) * total_loss + args.elbo_weight * belief_loss
 
         loss_last = torch.nn.functional.mse_loss(pred[:, -1, :].mean(dim=1), true_vol[:, -1, :].mean(dim=1))
 

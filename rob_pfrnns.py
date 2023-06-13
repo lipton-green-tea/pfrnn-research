@@ -175,9 +175,9 @@ class SmallPFRNN(nn.Module):
         self.train_trans_model = True
 
         # self.fc_obs = nn.Linear(self.ext_obs + self.h_dim, 1)
-        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 50)
-        self.fc_obs_l2 = nn.Linear(50, 30)
-        self.fc_obs_l3 = nn.Linear(30, 1)
+        self.fc_obs_l1 = nn.Linear(self.ext_obs + self.h_dim, 40)
+        self.fc_obs_l2 = nn.Linear(40, 25)
+        self.fc_obs_l3 = nn.Linear(25, 1)
         self.fc_obs = nn.Sequential(
             self.fc_obs_l1,
             nn.Sigmoid(),
@@ -193,9 +193,9 @@ class SmallPFRNN(nn.Module):
         # this will take as input a hidden state (volatility) and normaly dist. random float
         # TODO: let it take parameter values as input
 
-        self.fc_trans_l1 = nn.Linear(self.h_dim, 40)
-        self.fc_trans_l2 = nn.Linear(40, 30)
-        self.fc_trans_l3 = nn.Linear(30, 1)
+        self.fc_trans_l1 = nn.Linear(self.h_dim, 25)
+        self.fc_trans_l2 = nn.Linear(25, 15)
+        self.fc_trans_l3 = nn.Linear(15, 1)
         self.fc_trans = nn.Sequential(
             self.fc_trans_l1,
             nn.Sigmoid(),
@@ -260,10 +260,10 @@ class SmallPFRNN(nn.Module):
         var = self.fc_var(torch.concat((h0, input_), dim=1))
         std = torch.nn.functional.softplus(var)
         if torch.cuda.is_available():
-            eps = torch.cuda.FloatTensor(std.shape).normal_()
+            eps = torch.cuda.FloatTensor(std.shape).normal_() / 3
         else:
-            eps = torch.FloatTensor(std.shape).normal_()
-        h1 = h1 + eps
+            eps = torch.FloatTensor(std.shape).normal_() / 3
+        h1 = h1 + std * eps
         
         obs_liklihood = self.fc_obs(torch.concat((h1, input_), dim=1))
         p1 = obs_liklihood.view(self.num_particles, -1, 1) * \

@@ -34,30 +34,13 @@ if __name__=="__main__":
     def normalize(xs):
         return (xs - np.min(xs)) / (np.max(xs) - np.min(xs))
     
-
-    # training config
-    config = {
-        "samples": 2500,
-        "sequence_length": 300,
-        "window_size": 1,
-        "train_test_split": 0.8,
-        "epochs": 10, # set to 0 if you don't want to train the model
-        "batch_size": 25,
-        "learning_rate": 0.005,
-        "load_model_from_previous": False,
-        "load_data_from_previous": False,
-        "save_models": True,
-        "base_path": "./models/small_pfrnn",
-        "model_path": "./models/small_pfrnn_0.pt",
-        "use_gpu": False
-    }
     # first lets load our config
     # we check if the user has entered a desired config, otherwise we use the eval config
 
     if len(sys.argv) > 1:
         fp = sys.argv[1]
     else:
-        fp = "./configs/train_small_pfrnn.json"
+        fp = "./configs/eval.json"
     with open(fp, "r") as config_file:
         config = json.load(config_file)
 
@@ -174,7 +157,7 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
-    model = SmallPFRNNModel(model_config)  
+    model = HarveySVPF(model_config)  
     #model = SVMParamterEstimator(model_config)
     #model = LSTM1(1, config["window_size"], 150, 1)
     if torch.cuda.is_available() and config["use_gpu"]:
