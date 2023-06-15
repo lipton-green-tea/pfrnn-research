@@ -6,6 +6,7 @@ from visualisation import InteractivePlot
 from harvey_sv_model import HarveySVPF
 from small_pfrnn_model import SmallPFRNNModel
 from lstm_model import LSTM1
+from particle_filter_model import ParticleFilterModel
 
 import os
 import sys
@@ -120,6 +121,18 @@ if __name__=="__main__":
         xs = xs.astype(np.float32)
         ys = ys.astype(np.float32)
 
+        # only keep outliers
+        keep_only_outliers = False
+        if keep_only_outliers:
+            max_values = ys.max(axis=1).reshape((len(ys), ))
+            min_values = ys.min(axis=1).reshape((len(ys), ))
+            max_thresh = np.percentile(max_values, 97)
+            min_thresh = np.percentile(min_values, 3)
+            indices = np.where((max_values > max_thresh) | (min_values < min_thresh))[0]
+            xs = xs[indices]
+            ys = ys[indices]
+            print(len(ys))
+
         split = round(len(xs) * config["train_test_split"])
         indices = np.random.permutation(len(xs))
         train_indices, test_indices = indices[0:split], indices[split:]
@@ -157,13 +170,15 @@ if __name__=="__main__":
     # 
     # we also create an optimizer
 
+    #model = ParticleFilterModel(model_config)
     model = HarveySVPF(model_config)  
     #model = SVMParamterEstimator(model_config)
     #model = LSTM1(1, config["window_size"], 150, 1)
-    if torch.cuda.is_available() and config["use_gpu"]:
-        model.to('cuda')
-    optimizer = torch.optim.AdamW(
-            model.parameters(), lr=config["learning_rate"])
+    if type(model) != ParticleFilterModel:
+        if torch.cuda.is_available() and config["use_gpu"]:
+            model.to('cuda')
+        optimizer = torch.optim.AdamW(
+                model.parameters(), lr=config["learning_rate"])
 
     # if flag set in config we load our model parameters from a previous
     # iteration/checkpoint
@@ -289,6 +304,7 @@ if __name__=="__main__":
         "log_likelihood": np.zeros(len(ys_test)),
         "particle_log_likelihood": np.zeros(len(ys_test)),
     } 
+    print(ys_true.shape)
     real = np.squeeze(ys_true)
     pred = np.squeeze(ys_pred.transpose((1,0,2)))
     # we need to reshape the particles into a useable shape
@@ -298,7 +314,6 @@ if __name__=="__main__":
     test_results["qlike"] = evaluation_helpers.qlike(real, pred)
     test_results["mde"] = evaluation_helpers.mde(real, pred)
     test_results["log_likelihood"] = evaluation_helpers.log_likelihood(real, pred, sv_parameters.tau)
-
     for k, v in test_results.items():
         print(f"mean {k}: {v.mean()}")
         print(f"std  {k}: {v.std()}")
@@ -322,6 +337,7 @@ if __name__=="__main__":
 
     # create an interactive plot that allows us to explore how our model fits to data
     plot_config = config["plot_config"]
+    model.eval()
     iplot = InteractivePlot(model, xs_test, ys_test, config=plot_config)
     iplot.init_plot()
 

@@ -10,7 +10,7 @@ class InteractivePlot():
         self.xs = xs
         self.ys = ys
         self.config = config
-        self.ind = 7
+        self.ind = 1
 
         # set defaults in case user has not set them
         self.config["use_gpu"] = config.get("use_gpu", False)
@@ -53,7 +53,7 @@ class InteractivePlot():
 
     def create_plot_data(self, series_num):
 
-        single_series = self.xs[-series_num:(-series_num)+1]
+        single_series = self.xs[series_num:series_num+1]
         if torch.cuda.is_available() and self.config["use_gpu"]:
                     single_series = single_series.to('cuda')
         ys_pred, particle_pred = self.model.forward(single_series)
@@ -65,8 +65,8 @@ class InteractivePlot():
 
         # flatten into a 1D array
         ys_pred = ys_pred.reshape((len(ys_pred), ))
-        ys_true = ys_true[-series_num].reshape((len(self.ys[-series_num], )))
-        xs_true = self.xs[-series_num, :,-1].reshape((len(self.xs[-series_num]), ))
+        ys_true = ys_true[series_num].reshape((len(self.ys[series_num], )))
+        xs_true = self.xs[series_num, :,-1].reshape((len(self.xs[series_num]), ))
         particle_pred_y = particle_pred.flatten()
 
         print("mse error: ", end="")

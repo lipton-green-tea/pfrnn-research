@@ -6,10 +6,10 @@
     "epochs": 10,
     "batch_size": 50,
     "learning_rate": 0.0005,
-    "load_model_from_previous": false,
+    "load_model_from_previous": true,
     "load_data_from_previous": false,
     "save_models": true,
-    "base_path": "./models/new_training",
+    "base_path": "./models/pfrnn_epoch_1_second_training",
     "model_path": "./models/pfrnn_epoch_1.pt",
     "use_gpu": true,
     "sv_config": {

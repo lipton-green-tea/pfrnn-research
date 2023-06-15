@@ -53,6 +53,3 @@ class ParticleFilter():
 
     def get_mean_particle(self):
         return sum(self.particles) / len(self.particles)
-
-
-    
