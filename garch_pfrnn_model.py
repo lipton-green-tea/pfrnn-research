@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from rob_pfrnns import GarchPFRNN
+from svpfrnns import GarchPFRNN
 import numpy as np
 
 

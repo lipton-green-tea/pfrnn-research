@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from rob_pfrnns import SmallPFRNN
+from svpfrnns import SmallPFRNN
 import numpy as np
 
 
