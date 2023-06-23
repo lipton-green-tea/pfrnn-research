@@ -41,7 +41,7 @@ if __name__=="__main__":
     if len(sys.argv) > 1:
         fp = sys.argv[1]
     else:
-        fp = "./configs/eval.json"
+        fp = "./configs/train.json"
     with open(fp, "r") as config_file:
         config = json.load(config_file)
 

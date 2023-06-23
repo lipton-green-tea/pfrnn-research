@@ -1,9 +1,9 @@
 {
-    "samples": 2500,
+    "samples": 1000,
     "sequence_length": 300,
     "window_size": 1,
     "train_test_split": 0.8,    
-    "epochs": 10,
+    "epochs": 4,
     "batch_size": 50,
     "learning_rate": 0.0005,
     "load_model_from_previous": true,

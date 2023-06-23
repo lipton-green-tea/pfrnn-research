@@ -337,9 +337,11 @@ class GarchPFRNN(nn.Module):
         # this will take as input a hidden state (volatility) and normaly dist. random float
         # TODO: let it take parameter values as input
 
-        self.fc_trans_l1 = nn.Linear(self.h_dim, 100)
-        self.fc_trans_l2 = nn.Linear(100, 100)
-        self.fc_trans_l3 = nn.Linear(100, 1)
+        self.fc_trans_l1 = nn.Linear(self.h_dim, 200)
+        self.fc_trans_l2 = nn.Linear(200, 200)
+        self.fc_trans_l3 = nn.Linear(200, 200)
+        self.fc_trans_l4 = nn.Linear(200, 100)
+        self.fc_trans_l5 = nn.Linear(100, 1)
 
         if self.load_from_pretrained:
             fc_trans_l1_weights = np.transpose(np.load("./pretrained_weights/garch_trans_layer_0_weights.npy"))
@@ -348,24 +350,41 @@ class GarchPFRNN(nn.Module):
             fc_trans_l2_biases = np.transpose(np.load("./pretrained_weights/garch_trans_layer_1_biases.npy"))
             fc_trans_l3_weights = np.transpose(np.load("./pretrained_weights/garch_trans_layer_2_weights.npy"))
             fc_trans_l3_biases = np.transpose(np.load("./pretrained_weights/garch_trans_layer_2_biases.npy"))
+            fc_trans_l4_weights = np.transpose(np.load("./pretrained_weights/garch_trans_layer_3_weights.npy"))
+            fc_trans_l4_biases = np.transpose(np.load("./pretrained_weights/garch_trans_layer_3_biases.npy"))
+            fc_trans_l5_weights = np.transpose(np.load("./pretrained_weights/garch_trans_layer_4_weights.npy"))
+            fc_trans_l5_biases = np.transpose(np.load("./pretrained_weights/garch_trans_layer_4_biases.npy"))
             self.fc_trans_l1.weight.data = torch.from_numpy(fc_trans_l1_weights)
             self.fc_trans_l1.bias.data = torch.from_numpy(fc_trans_l1_biases)
             self.fc_trans_l2.weight.data = torch.from_numpy(fc_trans_l2_weights)
             self.fc_trans_l2.bias.data = torch.from_numpy(fc_trans_l2_biases)
             self.fc_trans_l3.weight.data = torch.from_numpy(fc_trans_l3_weights)
             self.fc_trans_l3.bias.data = torch.from_numpy(fc_trans_l3_biases)
-        self.fc_obs_l1.weight.requires_grad = self.train_trans_model
-        self.fc_obs_l1.bias.requires_grad = self.train_trans_model
-        self.fc_obs_l2.weight.requires_grad = self.train_trans_model
-        self.fc_obs_l2.bias.requires_grad = self.train_trans_model
-        self.fc_obs_l3.weight.requires_grad = self.train_trans_model
-        self.fc_obs_l3.bias.requires_grad = self.train_trans_model
+            self.fc_trans_l4.weight.data = torch.from_numpy(fc_trans_l4_weights)
+            self.fc_trans_l4.bias.data = torch.from_numpy(fc_trans_l4_biases)
+            self.fc_trans_l5.weight.data = torch.from_numpy(fc_trans_l5_weights)
+            self.fc_trans_l5.bias.data = torch.from_numpy(fc_trans_l5_biases)
+        self.fc_trans_l1.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l1.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l2.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l2.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l3.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l3.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l4.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l4.bias.requires_grad = self.train_trans_model
+        self.fc_trans_l5.weight.requires_grad = self.train_trans_model
+        self.fc_trans_l5.bias.requires_grad = self.train_trans_model
+
         self.fc_trans = nn.Sequential(
             self.fc_trans_l1,
-            nn.Sigmoid(),
+            nn.Tanh(),
             self.fc_trans_l2,
-            nn.Sigmoid(),
-            self.fc_trans_l3
+            nn.Tanh(),
+            self.fc_trans_l3,
+            nn.Tanh(),
+            self.fc_trans_l4,
+            nn.Tanh(),
+            self.fc_trans_l5,
         )
 
         # here we define a simple layer to determine the variance to use for reparameterization
@@ -419,7 +438,13 @@ class GarchPFRNN(nn.Module):
     def forward(self, input_, hx):
         h0, p0 = hx
         batch_size = h0.size(0)
-        h1_vol = self.fc_trans(torch.concat((h0, input_), dim=1))
+        var = torch.Tensor([0.0028861 , 0.07228504, 0.07229742, 0.1444811, 0.01155304, 0.02310782 , 0.02304983])
+        mean = torch.Tensor([ 4.97861683e-03 , 1.54884455e-01 , 1.24940350e-01 , 7.50835131e-01 , 1.99980894e-02 , 7.63748711e-05 , -2.50800646e-05])
+        trans_input_normed = (torch.concat((h0, input_), dim=1) - mean) / var
+        h1_vol = self.fc_trans(trans_input_normed)
+        var = torch.Tensor([0.00291117])
+        mean = torch.Tensor([0.00552819])
+        h1_vol = h1_vol * var + mean
         h1 = torch.concat((h0[:, :-1], h1_vol), dim=1)
 
         # add noise 
@@ -429,7 +454,7 @@ class GarchPFRNN(nn.Module):
             eps = torch.cuda.FloatTensor(std.shape).normal_()
         else:
             eps = torch.FloatTensor(std.shape).normal_()
-        h1[:, -1:] = h1[:, -1:] + std * eps  # only add noise to volatility estimation for now
+        #h1[:, -1:] = h1[:, -1:] + std * eps  # only add noise to volatility estimation for now
         
         obs_liklihood = self.fc_obs(torch.concat((h1[:,-1:], input_[:,-1:]), dim=1))
         p1 = obs_liklihood.view(self.num_particles, -1, 1) * \

@@ -19,11 +19,11 @@ if __name__=="__main__":
         "l2_weight": 0.9,
         "elbo_weight": 0.5,
         "resamp_alpha": 0.35,
-        "garch_paramters": {
-            "const": 0,
-            "q1": 0,
-            "q2": 0,
-            "p1": 0,
+        "garch_params": {
+            "const": 0.1,
+            "q1": 0.0637,
+            "q2": 0.0185,
+            "p1": 0.8972,
         }
     }
     model_args = ModelArgs(
@@ -43,8 +43,8 @@ if __name__=="__main__":
     ys = []
 
     # convert to numpy arrays
-    volatility = dataset["volatility"].to_numpy()
-    innovations = dataset["returns"].to_numpy()
+    volatility = dataset["volatility"].to_numpy()[1000:1500]
+    innovations = dataset["returns"].to_numpy()[1000:1500]
 
     # below we create several windows of observations
     window_size = config["window_size"]
@@ -69,8 +69,8 @@ if __name__=="__main__":
     ys = np.array(ys)
     xs = xs.astype(np.float32)
     ys = ys.astype(np.float32)
-    xs = torch.from_numpy(xs).tile((100,1,1))
-    ys = torch.from_numpy(ys).tile((100,1,1))
+    xs = torch.from_numpy(xs).tile((10,1,1))
+    ys = torch.from_numpy(ys).tile((10,1,1))
     xs.type(torch.FloatTensor)
     ys.type(torch.FloatTensor)
 
@@ -78,10 +78,11 @@ if __name__=="__main__":
     plot_config = {
         "use_gpu": True,
         "plot_innovations": False,
-        "plot_particles": False,
+        "plot_particles": True,
         "const_min_lim": None,
         "const_max_lim": None
     }
+    pred, pred_p = model.forward(xs)
     iplot = InteractivePlot(model, xs, ys, config=plot_config)
     iplot.init_plot()
 

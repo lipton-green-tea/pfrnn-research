@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 
 
+# class to create plots of volatlity and particles given a model and data.
+# users can click on the next or prev buttons to see different plots
 class InteractivePlot():
+
+    # takes in a pytorch model, returns data, the real volatility, and a config
     def __init__(self, model, xs, ys, config=dict()):
         self.model = model
         self.xs = xs
@@ -28,6 +32,7 @@ class InteractivePlot():
         self.particle_plot = None
 
 
+    # call once at the beginning to draw the first plot
     def init_plot(self):
         self.fig, self.ax = plt.subplots()
         plt.subplots_adjust(bottom=0.2)
@@ -51,6 +56,8 @@ class InteractivePlot():
         plt.show()
 
 
+    # generates the particles and estimated volatility for the given series
+    # number using the provided model
     def create_plot_data(self, series_num):
 
         single_series = self.xs[series_num:series_num+1]
@@ -95,7 +102,7 @@ class InteractivePlot():
         self.update()
 
 
-    # required function for button callback
+    # updates the plot with data from the new index
     def update(self):
         i  = self.ind %(len(self.xs))
         ys_pred,ys_true,xs_true,particle_x, particle_y = self.create_plot_data(i) #unpack tuple data

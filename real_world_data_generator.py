@@ -15,16 +15,16 @@ from os.path import isfile, join
 def generate_vol_from_price_data(price_data):
     price_data["log_returns"] = np.log(price_data["Close"]).diff()
     returns = price_data["log_returns"].to_numpy()[1:]
-    garch_model = pf.GARCH(returns, p=2, q=1)
+    garch_model = pf.GARCH(returns, p=1, q=2)
     result = garch_model.fit()
     parameters = garch_model.transform_z()
 
     gp = garch_pred_generator(
-        parameters[0],
-        parameters[1],
-        parameters[2],
-        parameters[3],
-        0# parameters[4]
+        parameters[0],  # vol const
+        parameters[1],  # q1
+        parameters[2],  # q2
+        parameters[3],  # p1
+        0               # would be p2
     )
     returns = returns - parameters[-1]  # subtract the mean of the returns
     for value in parameters:

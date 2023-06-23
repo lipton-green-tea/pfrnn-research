@@ -13,7 +13,7 @@ class GarchFilter(nn.Module):
             "const": 0.0,
             "q1": 0.9,
             "q2": 0.1,
-            "r1": 0.5
+            "p1": 0.5
         })
         self.output_dim = 1
         total_emb = 2  # input size to pfrnn
@@ -35,7 +35,7 @@ class GarchFilter(nn.Module):
             self.garch_params["const"],
             self.garch_params["q1"],
             self.garch_params["q2"],
-            self.garch_params["r1"]
+            self.garch_params["p1"]
         ])
         parameters = parameters.unsqueeze(0).expand(batch_size * self.num_particles, -1)
 
@@ -96,7 +96,7 @@ class GarchFilter(nn.Module):
         y = torch.sum(y, dim=1)
 
         y_out = y[:,:,-1:]  # only extract the volatility
-        pf_out = hidden_states
+        pf_out = hidden_states[:,:,-1:]  # only extract the volatility
         
         return y_out, pf_out
 
